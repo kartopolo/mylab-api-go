@@ -1,0 +1,13 @@
+{
+  "request": {
+    "url": "DELETE /v1/pasien/PS0001"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "message": "Pasien deleted.",
+      "kd_ps": "PS0001"
+    }
+  }
+}

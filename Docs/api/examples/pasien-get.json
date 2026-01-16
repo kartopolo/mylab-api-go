@@ -1,0 +1,17 @@
+{
+  "request": {
+    "url": "GET /v1/pasien/PS0001"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "message": "OK",
+      "data": {
+        "kd_ps": "PS0001",
+        "nama_ps": "Budi Santoso",
+        "sec_id": "10"
+      }
+    }
+  }
+}

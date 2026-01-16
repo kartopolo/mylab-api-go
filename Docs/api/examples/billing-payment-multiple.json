@@ -1,0 +1,36 @@
+{
+  "request": {
+    "url": "POST /v1/billing/payment",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "no_lab": "LAB001",
+      "id_karyawan": "KASIR01",
+      "payments": [
+        {
+          "tanggal": "2026-01-16",
+          "bayar": 300000,
+          "jnsbayar": "TUNAI"
+        },
+        {
+          "tanggal": "2026-01-16",
+          "bayar": 200000,
+          "jnsbayar": "TRANSFER",
+          "bank": "BCA",
+          "no_rek": "1234567890",
+          "nama_rek": "PT Example Medical",
+          "rek_tujuan": "9876543210"
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "message": "Pembayaran tersimpan.",
+      "no_lab": "LAB001"
+    }
+  }
+}

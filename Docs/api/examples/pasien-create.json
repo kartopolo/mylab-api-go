@@ -1,0 +1,25 @@
+{
+  "request": {
+    "url": "POST /v1/pasien",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "nama_ps": "Budi Santoso",
+      "jk": "L",
+      "tgl_lahir": "1990-01-01T00:00:00Z",
+      "alamat": "Jakarta",
+      "no_hp": "08123456789",
+      "email": "budi@example.com",
+      "nik": "3173xxxxxxxxxxxx"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "message": "Pasien created.",
+      "kd_ps": "PS0001"
+    }
+  }
+}

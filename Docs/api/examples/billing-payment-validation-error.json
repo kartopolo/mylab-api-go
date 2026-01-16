@@ -1,0 +1,23 @@
+{
+  "request": {
+    "url": "POST /v1/billing/payment",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "no_lab": "",
+      "payments": []
+    }
+  },
+  "response": {
+    "status": 422,
+    "body": {
+      "ok": false,
+      "message": "Validation failed.",
+      "errors": {
+        "no_lab": "no_lab is required.",
+        "payments": "payments is required and must not be empty."
+      }
+    }
+  }
+}

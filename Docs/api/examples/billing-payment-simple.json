@@ -1,0 +1,27 @@
+{
+  "request": {
+    "url": "POST /v1/billing/payment",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "no_lab": "LAB001",
+      "id_karyawan": "KASIR01",
+      "payments": [
+        {
+          "tanggal": "2026-01-16",
+          "bayar": 500000,
+          "jnsbayar": "TUNAI"
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "message": "Pembayaran tersimpan.",
+      "no_lab": "LAB001"
+    }
+  }
+}

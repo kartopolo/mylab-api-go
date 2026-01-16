@@ -1,0 +1,20 @@
+{
+  "request": {
+    "url": "PUT /v1/pasien/PS0001",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "alamat": "Bandung",
+      "no_hp": "08120000000"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "message": "Pasien updated.",
+      "kd_ps": "PS0001"
+    }
+  }
+}

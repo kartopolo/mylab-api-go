@@ -1,0 +1,10 @@
+.git
+.gitignore
+
+Docs/
+
+**/*.log
+**/*.tmp
+
+bin/
+

@@ -1,0 +1,567 @@
+openapi: 3.1.0
+info:
+  title: MyLab API (Go)
+  version: 0.1.0
+  description: |
+    Contract-first API definition. Keep this file in sync with handlers and JSON examples.
+servers:
+  - url: http://localhost:8080
+paths:
+  /healthz:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+
+  /readyz:
+    get:
+      summary: Readiness check
+      responses:
+        "200":
+          description: Ready
+        "503":
+          description: Not ready
+
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      responses:
+        "200":
+          description: Metrics
+  /v1/billing/payment:
+    post:
+      summary: Save payment only
+      security:
+        - UserIdHeader: []
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceUnauthorizedError'
+        '422':
+          description: Validation error
+        '409':
+          description: Conflict
+        '500':
+          description: Server error
+
+  /v1/pasien:
+    post:
+      summary: Create pasien
+      security:
+        - UserIdHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasienUpsertPayload'
+            examples:
+              create:
+                value:
+                  nama_ps: Budi Santoso
+                  jk: L
+                  tgl_lahir: '1990-01-01T00:00:00Z'
+                  alamat: Jakarta
+                  no_hp: '08123456789'
+                  email: budi@example.com
+                  nik: '3173xxxxxxxxxxxx'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasienCreateResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceUnauthorizedError'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceValidationError'
+        '500':
+          description: Server error
+
+  /v1/pasien/{kd_ps}:
+    parameters:
+      - name: kd_ps
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get pasien
+      security:
+        - UserIdHeader: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasienGetResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceUnauthorizedError'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceNotFoundError'
+        '500':
+          description: Server error
+    put:
+      summary: Update pasien
+      security:
+        - UserIdHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasienUpsertPayload'
+            examples:
+              update:
+                value:
+                  alamat: Bandung
+                  no_hp: '08120000000'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasienUpdateResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceUnauthorizedError'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceNotFoundError'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceValidationError'
+        '500':
+          description: Server error
+    delete:
+      summary: Delete pasien
+      security:
+        - UserIdHeader: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasienDeleteResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceUnauthorizedError'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceNotFoundError'
+        '500':
+          description: Server error
+
+  /v1/pasien/select:
+    post:
+      summary: Select pasien (paged)
+      security:
+        - UserIdHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasienSelectRequest'
+            examples:
+              select:
+                value:
+                  select: [kd_ps, nama_ps, no_hp, company_id]
+                  like:
+                    nama_ps: budi
+                  order_by:
+                    - field: nama_ps
+                      dir: asc
+                  page: 1
+                  per_page: 25
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasienSelectResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceUnauthorizedError'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceValidationError'
+        '500':
+          description: Server error
+components:
+  securitySchemes:
+    UserIdHeader:
+      type: apiKey
+      in: header
+      name: X-User-Id
+      description: |
+        Required for all /v1 endpoints.
+        The API looks up the user in `users` and derives tenant context from `users.company_id`.
+  schemas:
+    ServiceOkResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+    ServiceValidationError:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+
+    ServiceUnauthorizedError:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+
+    ServiceNotFoundError:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+
+    PasienUpsertPayload:
+      type: object
+      description: |
+        Payload for create/update pasien.
+        Unknown fields may be accepted by the API but are ignored (not persisted).
+        The primary key `kd_ps` is not fillable and is ignored if provided.
+        Tenant is derived from the authenticated user; `company_id` is overridden by the service.
+      properties:
+        company_id:
+          type: integer
+          description: |
+            Tenant/company identifier.
+            This value is forced to the authenticated user's `company_id` (client-supplied value is ignored).
+        nama_ps:
+          type: string
+        alamat:
+          type: string
+        telepon:
+          type: string
+        umur:
+          type: string
+        sec_id:
+          type: string
+        jk:
+          type: string
+        tanggal:
+          type: string
+          format: date-time
+        tgl_lahir:
+          type: string
+          format: date-time
+        propinsi:
+          type: string
+        kota:
+          type: string
+        kecamatan:
+          type: string
+        kelurahan:
+          type: string
+        no_fax:
+          type: string
+        email:
+          type: string
+        info:
+          type: string
+        no_hp:
+          type: string
+        agama:
+          type: string
+        titel:
+          type: string
+        pekerjaan:
+          type: string
+        jabatan:
+          type: string
+        referensi:
+          type: string
+        acara:
+          type: string
+        viv_card:
+          type: string
+        nik_name:
+          type: string
+        pnc_customer_type_id:
+          type: string
+        pnc_vip_date:
+          type: string
+          format: date-time
+        pnc_vip_expired_date:
+          type: string
+          format: date-time
+        pnc_membership_update:
+          type: string
+          format: date-time
+        pnc_card_expired_date:
+          type: string
+          format: date-time
+        pnc_tgl_mitra:
+          type: string
+          format: date-time
+        pnc_total_point:
+          type: integer
+        pnc_accumulated_sales:
+          type: integer
+        pnc_periodic_sales:
+          type: integer
+        pnc_jual_type:
+          type: string
+        pnc_sync:
+          type: string
+        pnc_customer_id:
+          type: string
+        pnc_kaijo_id:
+          type: string
+        pnc_crs_id:
+          type: string
+        freelancer:
+          type: string
+        type_program:
+          type: string
+        doc_mitra:
+          type: string
+        pnc_outlet_id:
+          type: string
+        mitra_doc:
+          type: string
+        tempat_lahir:
+          type: string
+        kd_dr:
+          type: string
+        departemen:
+          type: string
+        no_mrlama:
+          type: string
+        sts_alergi:
+          type: string
+        asuransi:
+          type: string
+        no_asuransi:
+          type: string
+        pendidikan:
+          type: string
+        penanggung_jawab:
+          type: string
+        lokasi_kerja:
+          type: string
+        status_karyawan:
+          type: string
+        ket_pekerjaan:
+          type: string
+        posisi_kerja_4:
+          type: string
+        sec_id_1:
+          type: string
+        lokasi_mcu:
+          type: string
+        gambar:
+          type: string
+        ket_gambar:
+          type: string
+        warga_negara:
+          type: string
+        sts_nikah:
+          type: string
+        sts_umur:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        sts_default:
+          type: string
+        custome_filename:
+          type: string
+        kelas_trafic:
+          type: string
+        faskes_asal:
+          type: string
+        kd_paket:
+          type: string
+        nik:
+          type: string
+        passport:
+          type: string
+        goldar:
+          type: string
+
+    PasienRecord:
+      allOf:
+        - $ref: '#/components/schemas/PasienUpsertPayload'
+        - type: object
+          properties:
+            kd_ps:
+              type: string
+
+    PasienCreateResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+        kd_ps:
+          type: string
+
+    PasienGetResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/PasienRecord'
+
+    PasienUpdateResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+        kd_ps:
+          type: string
+
+    PasienDeleteResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+        kd_ps:
+          type: string
+
+    PasienSelectOrderBy:
+      type: object
+      properties:
+        field:
+          type: string
+        dir:
+          type: string
+          description: asc|desc
+
+    PasienSelectRequest:
+      type: object
+      properties:
+        select:
+          type: array
+          items:
+            type: string
+        where:
+          type: object
+          additionalProperties: true
+        like:
+          type: object
+          additionalProperties: true
+        order_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/PasienSelectOrderBy'
+        page:
+          type: integer
+        per_page:
+          type: integer
+
+    PasienSelectPaging:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        has_more:
+          type: boolean
+
+    PasienSelectResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        paging:
+          $ref: '#/components/schemas/PasienSelectPaging'
