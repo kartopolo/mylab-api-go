@@ -1,0 +1,7 @@
+{
+  "ok": true,
+  "message": "Login successful.",
+  "token": "<JWT token>",
+  "expires_in": 86400,
+  "expires_at": 1700000000
+}

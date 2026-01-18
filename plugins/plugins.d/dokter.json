@@ -1,0 +1,12 @@
+{
+  "name": "micro-dokter",
+  "version": "0.1.0",
+  "mount": "/v1/plugins/dokter",
+  "upstream": "http://127.0.0.1:19081",
+  "timeout_ms": 2000,
+  "auth_mode": "forward_jwt",
+  "forward_headers": ["X-Request-Id"],
+  "inject_headers": {
+    "X-Plugin-Name": "micro-dokter"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "description": "Successful login with valid credentials",
+  "request": {
+    "method": "POST",
+    "url": "/v1/auth/login",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "email": "admin@example.com",
+      "password": "password123"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "message": "Login successful.",
+      "user_id": 1,
+      "company_id": 1,
+      "role": "admin"
+    }
+  }
+}

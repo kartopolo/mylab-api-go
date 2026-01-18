@@ -1,5 +1,10 @@
 # MyLab API (Go) - AI Coding Instructions
 
+
+## chat Language
+- use indonesian for chat responses unless otherwise specified.
+- Use indonesian for explanations and comments unless otherwise specified.
+
 ## Purpose
 - This repository is the HTTP API layer for MyLab.
 - It exposes REST endpoints and talks to the database.
@@ -63,7 +68,8 @@
 - `internal/config/` — Configuration loading (from env vars)
 - `internal/db/` — Database connection & transaction management
 - `internal/database/` — Eloquent-style query builder, scan helpers, error mapping
-- `internal/httpapi/` — HTTP handlers, middleware, response formatting
+- `internal/routes/` — Route registration + middleware (HTTP layer)
+- `internal/controllers/` — Controllers/handlers (Laravel-like)
 - `Docs/openapi/openapi.yaml` — API contract (OpenAPI 3.1)
 - `Docs/api/` — API documentation & JSON examples
 - `Dockerfile` — Multi-stage build for production image

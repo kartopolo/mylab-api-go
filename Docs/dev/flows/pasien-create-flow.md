@@ -6,7 +6,7 @@
 ## Entry Point
 
 Handler: `PasienHandlers.HandleCollection`  
-Location: [internal/httpapi/pasien_handlers.go](../../internal/httpapi/pasien_handlers.go#L22)
+Location: [internal/controllers/pasien/PasienController.go](../../../internal/controllers/pasien/PasienController.go#L1)
 
 ## Request Flow
 
@@ -52,7 +52,7 @@ Location: [internal/httpapi/pasien_handlers.go](../../internal/httpapi/pasien_ha
 
 ## Related Code References
 
-- Handler: [internal/httpapi/pasien_handlers.go](../../internal/httpapi/pasien_handlers.go)
+- Handler: [internal/controllers/pasien/PasienController.go](../../../internal/controllers/pasien/PasienController.go)
 - Service: [internal/pasien/service.go](../../internal/pasien/service.go)
 - Schema: [internal/database/model/pasienmodel/pasien_schema.go](../../internal/database/model/pasienmodel/pasien_schema.go)
 - Insert helper: [internal/database/eloquent/crud.go](../../internal/database/eloquent/crud.go)

@@ -13,12 +13,12 @@ type OrderBy struct {
 }
 
 type SelectRequest struct {
-	Select    []string       `json:"select"`
-	Where     map[string]any `json:"where"`
-	Like      map[string]any `json:"like"`
-	OrderBy   []OrderBy      `json:"order_by"`
-	Page      int            `json:"page"`
-	PerPage   int            `json:"per_page"`
+	Select  []string       `json:"select"`
+	Where   map[string]any `json:"where"`
+	Like    map[string]any `json:"like"`
+	OrderBy []OrderBy      `json:"order_by"`
+	Page    int            `json:"page"`
+	PerPage int            `json:"per_page"`
 }
 
 type PageResult struct {
@@ -257,4 +257,3 @@ func (b *sqlBuilder) secIDLegacyTenant(col string) string {
 	// (col IS NULL OR col = '' OR col = '0')
 	return fmt.Sprintf("(%s IS NULL OR %s = %s OR %s = %s)", col, col, b.push(""), col, b.push("0"))
 }
-

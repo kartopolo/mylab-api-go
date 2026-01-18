@@ -1,0 +1,29 @@
+# Schema override untuk table: pasien
+#
+# Catatan penting:
+# - Gateway akan memaksa tenant dari JWT: company_id selalu di-set dari auth context.
+# - Supaya insert/update tidak membuang company_id saat normalizePayload, company_id HARUS ada di fillable jika fillable didefinisikan.
+# - File ini bersifat "publish-ready" sebagai contoh lengkap; boleh Anda edit sesuai kebutuhan.
+#
+# Format:
+# primary_key=<kolom PK>
+# timestamps=true|false
+# fillable=col1,col2
+# columns=col1,col2,col3
+# aliases=alias1:real_col1,alias2:real_col2
+# casts=col:int,col2:datetime
+
+primary_key=kd_ps
+timestamps=true
+
+# Payload key alias (legacy compatibility)
+aliases=com_id:company_id
+
+# Semua kolom pasien (hasil introspeksi DB)
+columns=kd_ps,nama_ps,alamat,telepon,umur,sec_id,jk,tanggal,tgl_lahir,propinsi,kota,kecamatan,kelurahan,no_fax,email,info,no_hp,agama,titel,pekerjaan,jabatan,referensi,acara,viv_card,nik_name,pnc_customer_type_id,pnc_vip_date,pnc_vip_expired_date,pnc_membership_update,pnc_card_expired_date,pnc_tgl_mitra,pnc_total_point,pnc_accumulated_sales,pnc_periodic_sales,pnc_jual_type,pnc_sync,pnc_customer_id,pnc_kaijo_id,pnc_crs_id,freelancer,type_program,doc_mitra,pnc_outlet_id,mitra_doc,tempat_lahir,kd_dr,departemen,no_mrlama,sts_alergi,asuransi,no_asuransi,pendidikan,penanggung_jawab,lokasi_kerja,status_karyawan,ket_pekerjaan,posisi_kerja_4,sec_id_1,lokasi_mcu,gambar,ket_gambar,warga_negara,sts_nikah,sts_umur,created_at,updated_at,sts_default,custome_filename,kelas_trafic,faskes_asal,kd_paket,nik,passport,goldar,company_id,com_id
+
+# Kolom yang boleh diisi oleh payload API (kecuali PK). company_id disertakan karena dipaksa dari auth.
+fillable=nama_ps,alamat,telepon,umur,sec_id,jk,tanggal,tgl_lahir,propinsi,kota,kecamatan,kelurahan,no_fax,email,info,no_hp,agama,titel,pekerjaan,jabatan,referensi,acara,viv_card,nik_name,pnc_customer_type_id,pnc_vip_date,pnc_vip_expired_date,pnc_membership_update,pnc_card_expired_date,pnc_tgl_mitra,pnc_total_point,pnc_accumulated_sales,pnc_periodic_sales,pnc_jual_type,pnc_sync,pnc_customer_id,pnc_kaijo_id,pnc_crs_id,freelancer,type_program,doc_mitra,pnc_outlet_id,mitra_doc,tempat_lahir,kd_dr,departemen,no_mrlama,sts_alergi,asuransi,no_asuransi,pendidikan,penanggung_jawab,lokasi_kerja,status_karyawan,ket_pekerjaan,posisi_kerja_4,sec_id_1,lokasi_mcu,gambar,ket_gambar,warga_negara,sts_nikah,sts_umur,sts_default,custome_filename,kelas_trafic,faskes_asal,kd_paket,nik,passport,goldar,company_id
+
+# Casting agar validasi payload stabil
+casts=umur:int,pnc_sync:int,freelancer:int,type_program:int,sts_default:int,company_id:int,com_id:int,pnc_total_point:float,pnc_accumulated_sales:float,pnc_periodic_sales:float,pnc_vip_date:datetime,pnc_vip_expired_date:datetime,pnc_tgl_mitra:datetime,pnc_membership_update:datetime,pnc_card_expired_date:datetime,tanggal:datetime,tgl_lahir:datetime,created_at:datetime,updated_at:datetime

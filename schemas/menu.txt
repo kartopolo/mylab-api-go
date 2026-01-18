@@ -1,0 +1,17 @@
+# Schema override untuk table: menu
+#
+# File ini opsional. Jika tidak ada, schema akan diambil dari DB via introspection.
+# Jika ada, field yang ditulis di sini akan override hasil introspection.
+#
+# Format:
+# primary_key=<kolom PK>
+# timestamps=true|false
+# fillable=col1,col2
+# columns=col1,col2,col3
+# aliases=alias1:real_col1,alias2:real_col2
+# casts=col:int,col2:datetime
+
+primary_key=id
+# timestamps=false
+# fillable=menu_name,app_name,link,icon,urut
+# casts=id:int,company_id:int

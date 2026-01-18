@@ -1,0 +1,24 @@
+{
+  "description": "Login with missing required fields",
+  "request": {
+    "method": "POST",
+    "url": "/v1/auth/login",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "email": ""
+    }
+  },
+  "response": {
+    "status": 422,
+    "body": {
+      "ok": false,
+      "message": "Validation failed.",
+      "errors": {
+        "email": "required",
+        "password": "required"
+      }
+    }
+  }
+}

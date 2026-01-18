@@ -1,0 +1,7 @@
+{
+  "where": {"jk": "L"},
+  "like": {"nama_ps": "John"},
+  "order_by": [{"field": "kd_ps", "dir": "desc"}],
+  "page": 1,
+  "per_page": 20
+}

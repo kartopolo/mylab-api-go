@@ -1,0 +1,80 @@
+      column_name      |          data_type          | is_nullable 
+-----------------------+-----------------------------+-------------
+ kd_ps                 | character varying           | NO
+ nama_ps               | character varying           | YES
+ alamat                | character varying           | YES
+ telepon               | character varying           | NO
+ umur                  | integer                     | YES
+ sec_id                | character varying           | YES
+ jk                    | character                   | NO
+ tanggal               | date                        | YES
+ tgl_lahir             | date                        | YES
+ propinsi              | character varying           | YES
+ kota                  | character varying           | YES
+ kecamatan             | character varying           | YES
+ kelurahan             | character varying           | YES
+ no_fax                | character varying           | YES
+ email                 | character varying           | YES
+ info                  | text                        | YES
+ no_hp                 | character varying           | YES
+ agama                 | character varying           | YES
+ titel                 | character varying           | YES
+ pekerjaan             | character varying           | YES
+ jabatan               | character varying           | YES
+ referensi             | character varying           | YES
+ acara                 | character varying           | YES
+ viv_card              | character varying           | YES
+ nik_name              | character varying           | YES
+ pnc_customer_type_id  | character varying           | YES
+ pnc_vip_date          | timestamp without time zone | YES
+ pnc_vip_expired_date  | timestamp without time zone | YES
+ pnc_membership_update | date                        | YES
+ pnc_card_expired_date | date                        | YES
+ pnc_tgl_mitra         | timestamp without time zone | YES
+ pnc_total_point       | numeric                     | YES
+ pnc_accumulated_sales | numeric                     | YES
+ pnc_periodic_sales    | numeric                     | YES
+ pnc_jual_type         | character varying           | YES
+ pnc_sync              | integer                     | YES
+ pnc_customer_id       | character varying           | YES
+ pnc_kaijo_id          | character varying           | YES
+ pnc_crs_id            | character varying           | YES
+ freelancer            | integer                     | YES
+ type_program          | integer                     | YES
+ doc_mitra             | character varying           | YES
+ pnc_outlet_id         | character varying           | YES
+ mitra_doc             | character varying           | YES
+ tempat_lahir          | character varying           | YES
+ kd_dr                 | character varying           | YES
+ departemen            | character varying           | YES
+ no_mrlama             | character varying           | YES
+ sts_alergi            | character varying           | YES
+ asuransi              | character varying           | YES
+ no_asuransi           | character varying           | YES
+ pendidikan            | character varying           | YES
+ penanggung_jawab      | character varying           | YES
+ lokasi_kerja          | character varying           | YES
+ status_karyawan       | character varying           | YES
+ ket_pekerjaan         | character varying           | YES
+ posisi_kerja_4        | character varying           | YES
+ sec_id_1              | character varying           | YES
+ lokasi_mcu            | character varying           | YES
+ gambar                | bytea                       | YES
+ ket_gambar            | character varying           | YES
+ warga_negara          | character varying           | NO
+ sts_nikah             | character varying           | YES
+ sts_umur              | character varying           | YES
+ created_at            | timestamp without time zone | NO
+ updated_at            | timestamp without time zone | YES
+ sts_default           | integer                     | YES
+ custome_filename      | character varying           | YES
+ kelas_trafic          | character varying           | YES
+ faskes_asal           | character varying           | YES
+ kd_paket              | character varying           | YES
+ nik                   | character varying           | YES
+ passport              | character varying           | YES
+ goldar                | character varying           | YES
+ company_id            | integer                     | NO
+ com_id                | integer                     | NO
+(76 rows)
+

@@ -1,0 +1,20 @@
+[Unit]
+Description=MyLab API (Go) - Host Service
+After=network.target docker.service
+ConditionPathExists=/var/www/mylab-api-go/bin/mylab-api-go
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/mylab-api-go
+ExecStart=/var/www/mylab-api-go/bin/mylab-api-go
+Environment=HTTP_ADDR=:18080
+Environment=DATABASE_URL=postgres://tiara:tiara@localhost:15432/mylab?sslmode=disable
+Environment=LOG_LEVEL=info
+Restart=always
+RestartSec=2
+# Security hardening (basic)
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

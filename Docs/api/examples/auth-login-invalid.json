@@ -1,0 +1,24 @@
+{
+  "description": "Login with invalid credentials (wrong password or non-existent user)",
+  "request": {
+    "method": "POST",
+    "url": "/v1/auth/login",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "email": "admin@example.com",
+      "password": "wrongpassword"
+    }
+  },
+  "response": {
+    "status": 401,
+    "body": {
+      "ok": false,
+      "message": "Unauthorized.",
+      "errors": {
+        "credentials": "invalid"
+      }
+    }
+  }
+}

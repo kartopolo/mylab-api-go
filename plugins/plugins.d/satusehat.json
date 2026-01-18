@@ -1,0 +1,12 @@
+{
+  "name": "micro-satusehat",
+  "version": "0.1.0",
+  "mount": "/v1/plugins/satusehat",
+  "upstream": "http://127.0.0.1:19082",
+  "timeout_ms": 3000,
+  "auth_mode": "forward_jwt",
+  "forward_headers": ["X-Request-Id"],
+  "inject_headers": {
+    "X-Plugin-Name": "micro-satusehat"
+  }
+}

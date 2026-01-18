@@ -16,14 +16,14 @@ const (
 )
 
 type Schema struct {
-	Table       string
-	PrimaryKey  string
-	Columns     []string
-	Casts       map[string]CastType
-	Fillable    []string
-	Aliases     map[string]string
-	Timestamps  bool
-	Now         func() time.Time
+	Table      string
+	PrimaryKey string
+	Columns    []string
+	Casts      map[string]CastType
+	Fillable   []string
+	Aliases    map[string]string
+	Timestamps bool
+	Now        func() time.Time
 }
 
 func (s Schema) withDefaults() Schema {
@@ -41,6 +41,12 @@ func (s Schema) hasColumn(col string) bool {
 		}
 	}
 	return false
+}
+
+// HasColumn reports whether the schema includes the given column.
+// This is exported for use by internal packages that build safe, schema-driven SQL.
+func (s Schema) HasColumn(col string) bool {
+	return s.hasColumn(col)
 }
 
 func (s Schema) fillableSet() map[string]bool {

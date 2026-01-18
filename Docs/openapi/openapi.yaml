@@ -29,30 +29,153 @@ paths:
       responses:
         "200":
           description: Metrics
-  /v1/billing/payment:
+
+  /v1/auth/login:
     post:
-      summary: Save payment only
-      security:
-        - UserIdHeader: []
+      summary: User authentication (login)
+      description: |
+        Authenticate user with email and password.
+        Returns user information on success.
+        No authentication header required for this endpoint.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User email address (case-insensitive)
+                  example: admin@example.com
+                password:
+                  type: string
+                  format: password
+                  description: User password
+                  example: password123
+            examples:
+              valid:
+                summary: Valid credentials
+                value:
+                  email: admin@example.com
+                  password: password123
+              caseInsensitiveEmail:
+                summary: Case-insensitive email
+                value:
+                  email: ADMIN@EXAMPLE.COM
+                  password: password123
+              missingFields:
+                summary: Missing required fields
+                value:
+                  email: ""
       responses:
         '200':
-          description: OK
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - ok
+                  - message
+                  - user_id
+                  - company_id
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Login successful.
+                  user_id:
+                    type: integer
+                    format: int64
+                    description: User ID
+                    example: 1
+                  company_id:
+                    type: integer
+                    format: int64
+                    description: Company/tenant ID
+                    example: 1
+                  role:
+                    type: string
+                    description: User role (optional, omitted if null in database)
+                    example: admin
+              examples:
+                withRole:
+                  summary: Login success with role
+                  value:
+                    ok: true
+                    message: Login successful.
+                    user_id: 1
+                    company_id: 1
+                    role: admin
+                withoutRole:
+                  summary: Login success without role
+                  value:
+                    ok: true
+                    message: Login successful.
+                    user_id: 2
+                    company_id: 1
         '401':
-          description: Unauthorized
+          description: Invalid credentials
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceUnauthorizedError'
+              examples:
+                invalidCredentials:
+                  summary: Wrong password or user not found
+                  value:
+                    ok: false
+                    message: Unauthorized.
+                    errors:
+                      credentials: invalid
         '422':
           description: Validation error
-        '409':
-          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceValidationError'
+              examples:
+                missingFields:
+                  summary: Missing required fields
+                  value:
+                    ok: false
+                    message: Validation failed.
+                    errors:
+                      email: required
+                      password: required
+                invalidJson:
+                  summary: Invalid JSON body
+                  value:
+                    ok: false
+                    message: Validation failed.
+                    errors:
+                      body: invalid JSON
         '500':
-          description: Server error
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceError'
 
-  /v1/pasien:
+  /v1/query:
     post:
-      summary: Create pasien
+      summary: Execute restricted query (Laravel-style DSL)
+      description: |
+        Executes a tenant-enforced, whitelist-validated query built from a restricted
+        Laravel-style query builder chain.
+
+        The server does NOT execute raw SQL strings.
+      tags:
+        - Query
       security:
         - UserIdHeader: []
       requestBody:
@@ -60,168 +183,174 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PasienUpsertPayload'
+              $ref: '#/components/schemas/LaravelQueryRequest'
             examples:
-              create:
+              menuExample:
+                summary: Query menu with LIKE and LIMIT
                 value:
-                  nama_ps: Budi Santoso
-                  jk: L
-                  tgl_lahir: '1990-01-01T00:00:00Z'
-                  alamat: Jakarta
-                  no_hp: '08123456789'
-                  email: budi@example.com
-                  nik: '3173xxxxxxxxxxxx'
+                  laravel_query: "table('menu as m')->select('m.id','m.menu_name')->where('m.menu_name','like','admin')->orderby('m.id','desc')->take(10)"
       responses:
         '200':
           description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PasienCreateResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServiceUnauthorizedError'
-        '422':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServiceValidationError'
-        '500':
-          description: Server error
 
-  /v1/pasien/{kd_ps}:
-    parameters:
-      - name: kd_ps
-        in: path
+  /v1/crud/{table}:
+    post:
+      summary: Generic CRUD - create
+      description: |
+        Create a record in the given table. Tenant-enforced via company_id.
+        Table access is controlled via env (CRUD_ALLOWED_TABLES / CRUD_DENIED_TABLES).
+      tags:
+        - Generic CRUD
+      parameters:
+        - in: path
+          name: table
+          required: true
+          schema:
+            type: string
+      requestBody:
         required: true
-        schema:
-          type: string
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericCRUDCreateResponse'
+
+  /v1/crud/{table}/{pk}:
     get:
-      summary: Get pasien
-      security:
-        - UserIdHeader: []
+      summary: Generic CRUD - get
+      tags:
+        - Generic CRUD
+      parameters:
+        - in: path
+          name: table
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: pk
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PasienGetResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServiceUnauthorizedError'
-        '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServiceNotFoundError'
-        '500':
-          description: Server error
+                $ref: '#/components/schemas/GenericCRUDGetResponse'
     put:
-      summary: Update pasien
-      security:
-        - UserIdHeader: []
+      summary: Generic CRUD - update
+      tags:
+        - Generic CRUD
+      parameters:
+        - in: path
+          name: table
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: pk
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PasienUpsertPayload'
-            examples:
-              update:
-                value:
-                  alamat: Bandung
-                  no_hp: '08120000000'
+              type: object
+              additionalProperties: true
       responses:
         '200':
-          description: OK
+          description: Updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PasienUpdateResponse'
-        '401':
-          description: Unauthorized
+                $ref: '#/components/schemas/GenericCRUDWriteResponse'
+    patch:
+      summary: Generic CRUD - patch
+      tags:
+        - Generic CRUD
+      parameters:
+        - in: path
+          name: table
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: pk
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Patched
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceUnauthorizedError'
-        '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServiceNotFoundError'
-        '422':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServiceValidationError'
-        '500':
-          description: Server error
+                $ref: '#/components/schemas/GenericCRUDWriteResponse'
     delete:
-      summary: Delete pasien
-      security:
-        - UserIdHeader: []
+      summary: Generic CRUD - delete
+      tags:
+        - Generic CRUD
+      parameters:
+        - in: path
+          name: table
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: pk
+          required: true
+          schema:
+            type: string
       responses:
         '200':
-          description: OK
+          description: Deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PasienDeleteResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServiceUnauthorizedError'
-        '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServiceNotFoundError'
-        '500':
-          description: Server error
+                $ref: '#/components/schemas/GenericCRUDWriteResponse'
 
-  /v1/pasien/select:
+  /v1/crud/{table}/select:
     post:
-      summary: Select pasien (paged)
-      security:
-        - UserIdHeader: []
+      summary: Generic CRUD - select
+      description: Safe select with where/like/order_by/page/per_page.
+      tags:
+        - Generic CRUD
+      parameters:
+        - in: path
+          name: table
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PasienSelectRequest'
-            examples:
-              select:
-                value:
-                  select: [kd_ps, nama_ps, no_hp, company_id]
-                  like:
-                    nama_ps: budi
-                  order_by:
-                    - field: nama_ps
-                      dir: asc
-                  page: 1
-                  per_page: 25
+              $ref: '#/components/schemas/GenericCRUDSelectRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PasienSelectResponse'
+                $ref: '#/components/schemas/GenericCRUDSelectResponse'
         '401':
           description: Unauthorized
           content:
@@ -293,194 +422,65 @@ components:
           additionalProperties:
             type: string
 
-    PasienUpsertPayload:
+    LaravelQueryRequest:
       type: object
-      description: |
-        Payload for create/update pasien.
-        Unknown fields may be accepted by the API but are ignored (not persisted).
-        The primary key `kd_ps` is not fillable and is ignored if provided.
-        Tenant is derived from the authenticated user; `company_id` is overridden by the service.
+      required:
+        - laravel_query
       properties:
-        company_id:
-          type: integer
+        laravel_query:
+          type: string
           description: |
-            Tenant/company identifier.
-            This value is forced to the authenticated user's `company_id` (client-supplied value is ignored).
-        nama_ps:
-          type: string
-        alamat:
-          type: string
-        telepon:
-          type: string
-        umur:
-          type: string
-        sec_id:
-          type: string
-        jk:
-          type: string
-        tanggal:
-          type: string
-          format: date-time
-        tgl_lahir:
-          type: string
-          format: date-time
-        propinsi:
-          type: string
-        kota:
-          type: string
-        kecamatan:
-          type: string
-        kelurahan:
-          type: string
-        no_fax:
-          type: string
-        email:
-          type: string
-        info:
-          type: string
-        no_hp:
-          type: string
-        agama:
-          type: string
-        titel:
-          type: string
-        pekerjaan:
-          type: string
-        jabatan:
-          type: string
-        referensi:
-          type: string
-        acara:
-          type: string
-        viv_card:
-          type: string
-        nik_name:
-          type: string
-        pnc_customer_type_id:
-          type: string
-        pnc_vip_date:
-          type: string
-          format: date-time
-        pnc_vip_expired_date:
-          type: string
-          format: date-time
-        pnc_membership_update:
-          type: string
-          format: date-time
-        pnc_card_expired_date:
-          type: string
-          format: date-time
-        pnc_tgl_mitra:
-          type: string
-          format: date-time
-        pnc_total_point:
-          type: integer
-        pnc_accumulated_sales:
-          type: integer
-        pnc_periodic_sales:
-          type: integer
-        pnc_jual_type:
-          type: string
-        pnc_sync:
-          type: string
-        pnc_customer_id:
-          type: string
-        pnc_kaijo_id:
-          type: string
-        pnc_crs_id:
-          type: string
-        freelancer:
-          type: string
-        type_program:
-          type: string
-        doc_mitra:
-          type: string
-        pnc_outlet_id:
-          type: string
-        mitra_doc:
-          type: string
-        tempat_lahir:
-          type: string
-        kd_dr:
-          type: string
-        departemen:
-          type: string
-        no_mrlama:
-          type: string
-        sts_alergi:
-          type: string
-        asuransi:
-          type: string
-        no_asuransi:
-          type: string
-        pendidikan:
-          type: string
-        penanggung_jawab:
-          type: string
-        lokasi_kerja:
-          type: string
-        status_karyawan:
-          type: string
-        ket_pekerjaan:
-          type: string
-        posisi_kerja_4:
-          type: string
-        sec_id_1:
-          type: string
-        lokasi_mcu:
-          type: string
-        gambar:
-          type: string
-        ket_gambar:
-          type: string
-        warga_negara:
-          type: string
-        sts_nikah:
-          type: string
-        sts_umur:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-        sts_default:
-          type: string
-        custome_filename:
-          type: string
-        kelas_trafic:
-          type: string
-        faskes_asal:
-          type: string
-        kd_paket:
-          type: string
-        nik:
-          type: string
-        passport:
-          type: string
-        goldar:
-          type: string
+            Restricted Laravel-style query builder chain.
+            The server parses and validates this DSL; raw SQL is not executed.
+          example: "table('menu as m')->select('m.id','m.menu_name')->where('m.menu_name','like','admin')->orderby('m.id','desc')->take(10)"
 
-    PasienRecord:
-      allOf:
-        - $ref: '#/components/schemas/PasienUpsertPayload'
-        - type: object
-          properties:
-            kd_ps:
-              type: string
+    GenericQueryResponse:
+      type: object
+      required:
+        - ok
+        - message
+        - data
+      properties:
+        ok:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: OK
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
 
-    PasienCreateResponse:
+    GenericCRUDCreateResponse:
       type: object
       properties:
         ok:
           type: boolean
         message:
           type: string
-        kd_ps:
+        table:
+          type: string
+        pk:
+          description: Primary key value
+          oneOf:
+            - type: string
+            - type: integer
+
+    GenericCRUDWriteResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+        table:
+          type: string
+        pk:
           type: string
 
-    PasienGetResponse:
+    GenericCRUDGetResponse:
       type: object
       properties:
         ok:
@@ -488,38 +488,19 @@ components:
         message:
           type: string
         data:
-          $ref: '#/components/schemas/PasienRecord'
+          type: object
+          additionalProperties: true
 
-    PasienUpdateResponse:
-      type: object
-      properties:
-        ok:
-          type: boolean
-        message:
-          type: string
-        kd_ps:
-          type: string
-
-    PasienDeleteResponse:
-      type: object
-      properties:
-        ok:
-          type: boolean
-        message:
-          type: string
-        kd_ps:
-          type: string
-
-    PasienSelectOrderBy:
+    GenericCRUDOrderBy:
       type: object
       properties:
         field:
           type: string
         dir:
           type: string
-          description: asc|desc
+          enum: [asc, desc]
 
-    PasienSelectRequest:
+    GenericCRUDSelectRequest:
       type: object
       properties:
         select:
@@ -535,13 +516,13 @@ components:
         order_by:
           type: array
           items:
-            $ref: '#/components/schemas/PasienSelectOrderBy'
+            $ref: '#/components/schemas/GenericCRUDOrderBy'
         page:
           type: integer
         per_page:
           type: integer
 
-    PasienSelectPaging:
+    GenericCRUDSelectPaging:
       type: object
       properties:
         page:
@@ -551,7 +532,7 @@ components:
         has_more:
           type: boolean
 
-    PasienSelectResponse:
+    GenericCRUDSelectResponse:
       type: object
       properties:
         ok:
@@ -564,4 +545,4 @@ components:
             type: object
             additionalProperties: true
         paging:
-          $ref: '#/components/schemas/PasienSelectPaging'
+          $ref: '#/components/schemas/GenericCRUDSelectPaging'

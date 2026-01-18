@@ -107,27 +107,35 @@ This ensures:
 
 ## Available Endpoints
 
-## Authentication (Current)
-
-All `/v1/*` endpoints require a registered user.
-
-- Header: `X-User-Id: <int>`
-- Tenant context is derived from `users.company_id`.
-
-### Health & Observability
+### Health & Observability (Public)
 - `GET /healthz` - Basic health check
 - `GET /readyz` - Readiness check (includes DB connectivity)
 - `GET /metrics` - Prometheus metrics
 
-### Billing
+### Authentication
+- [`POST /v1/auth/login`](endpoints/auth-login.md) - User login (public endpoint)
+
+### Protected Endpoints
+
+All `/v1/*` endpoints (except `/v1/auth/login`) require authentication:
+
+- **Header**: `X-User-Id: <int>`
+- **Tenant context**: Derived from `users.company_id`
+- **Unauthorized**: Returns HTTP 401 if header is missing or invalid
+
+#### Billing
 - [`POST /v1/billing/payment`](endpoints/billing-payment.md) - Save payment only
 
-### Patient (Pasien)
-- [`POST /v1/pasien`](endpoints/pasien.md) - Create pasien
-- [`GET /v1/pasien/{kd_ps}`](endpoints/pasien.md) - Get pasien
-- [`PUT /v1/pasien/{kd_ps}`](endpoints/pasien.md) - Update pasien
-- [`DELETE /v1/pasien/{kd_ps}`](endpoints/pasien.md) - Delete pasien
-- [`POST /v1/pasien/select`](endpoints/pasien-select.md) - Select pasien (paged)
+#### Generic CRUD (Table-based)
+- [`POST /v1/crud/{table}`](endpoints/generic-crud.md) - Create record
+- [`GET /v1/crud/{table}/{pk}`](endpoints/generic-crud.md) - Get record
+- [`PUT /v1/crud/{table}/{pk}`](endpoints/generic-crud.md) - Update record
+- [`PATCH /v1/crud/{table}/{pk}`](endpoints/generic-crud.md) - Partial update
+- [`DELETE /v1/crud/{table}/{pk}`](endpoints/generic-crud.md) - Delete record
+- [`POST /v1/crud/{table}/select`](endpoints/generic-crud.md) - Select/list (paged)
+
+#### Query
+- [`POST /v1/query`](endpoints/query.md) - Execute restricted query (Laravel-style DSL)
 
 ## JSON Examples
 
@@ -145,7 +153,7 @@ When adding new endpoints:
 1. Update OpenAPI contract first: `Docs/openapi/openapi.yaml`
 2. Create endpoint documentation: `Docs/api/endpoints/{endpoint}.md`
 3. Add JSON examples: `Docs/api/examples/{operation}.json`
-4. Implement handler in `internal/httpapi/`
+4. Implement controller in `internal/controllers/` and register routes in `internal/routes/`
 5. Ensure all three layers are consistent
 
 ## Support

@@ -1,0 +1,21 @@
+{
+  "description": "Login with invalid JSON body",
+  "request": {
+    "method": "POST",
+    "url": "/v1/auth/login",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": "invalid json {{"
+  },
+  "response": {
+    "status": 422,
+    "body": {
+      "ok": false,
+      "message": "Validation failed.",
+      "errors": {
+        "body": "invalid JSON"
+      }
+    }
+  }
+}

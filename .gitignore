@@ -18,6 +18,19 @@ coverage.out
 .vscode/
 .idea/
 
+# Environment files (sensitive data)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+host-run.pid
+
+# Temporary files
+tmp/
+temp/
+
 # OS
 .DS_Store
 

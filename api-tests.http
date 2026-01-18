@@ -1,0 +1,174 @@
+### MyLab API Tests
+### Use REST Client extension in VS Code (humao.rest-client)
+### Or Thunder Client extension (rangav.vscode-thunder-client)
+
+@baseUrl = http://localhost:18080
+@userId = 1
+
+################################################################################
+### Health & Observability
+################################################################################
+
+### Health Check (Public)
+GET {{baseUrl}}/healthz
+
+### Ready Check (Public)
+GET {{baseUrl}}/readyz
+
+### Metrics (Public)
+GET {{baseUrl}}/metrics
+
+################################################################################
+### Authentication
+################################################################################
+
+### Login - Success
+POST {{baseUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "password123"
+}
+
+### Login - Invalid Credentials
+POST {{baseUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "wrongpassword"
+}
+
+### Login - Missing Fields
+POST {{baseUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": ""
+}
+
+### Login - Case Insensitive Email
+POST {{baseUrl}}/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "ADMIN@EXAMPLE.COM",
+  "password": "password123"
+}
+
+################################################################################
+### Pasien (Patient) - CRUD
+################################################################################
+
+### Create Pasien
+POST {{baseUrl}}/v1/pasien
+X-User-Id: {{userId}}
+Content-Type: application/json
+
+{
+  "nm_ps": "John Doe",
+  "jk": "L",
+  "tgl_lahir": "1990-01-01T00:00:00Z",
+  "alamat": "Jakarta",
+  "no_hp": "08123456789",
+  "email": "john@example.com"
+}
+
+### Get Pasien by ID
+GET {{baseUrl}}/v1/pasien/0000001
+X-User-Id: {{userId}}
+
+### Update Pasien
+PUT {{baseUrl}}/v1/pasien/0000001
+X-User-Id: {{userId}}
+Content-Type: application/json
+
+{
+  "nm_ps": "John Doe Updated",
+  "alamat": "Jakarta Selatan"
+}
+
+### Delete Pasien
+DELETE {{baseUrl}}/v1/pasien/0000001
+X-User-Id: {{userId}}
+
+################################################################################
+### Pasien Select (Query)
+################################################################################
+
+### Select All Pasien (Page 1)
+POST {{baseUrl}}/v1/pasien/select
+X-User-Id: {{userId}}
+Content-Type: application/json
+
+{
+  "page": 1,
+  "per_page": 10
+}
+
+### Select Pasien with Filter (Name contains "John")
+POST {{baseUrl}}/v1/pasien/select
+X-User-Id: {{userId}}
+Content-Type: application/json
+
+{
+  "where": [
+    ["nm_ps", "like", "%John%"]
+  ],
+  "page": 1,
+  "per_page": 10
+}
+
+### Select Pasien with Multiple Filters
+POST {{baseUrl}}/v1/pasien/select
+X-User-Id: {{userId}}
+Content-Type: application/json
+
+{
+  "where": [
+    ["jk", "=", "L"],
+    ["alamat", "like", "%Jakarta%"]
+  ],
+  "order_by": [["nm_ps", "asc"]],
+  "page": 1,
+  "per_page": 20
+}
+
+################################################################################
+### Billing
+################################################################################
+
+### Save Payment Only
+POST {{baseUrl}}/v1/billing/payment
+X-User-Id: {{userId}}
+Content-Type: application/json
+
+{
+  "no_lab": "LAB001",
+  "bayar": 500000,
+  "tgl_bayar": "2026-01-17T10:00:00Z",
+  "keterangan": "Pembayaran via transfer"
+}
+
+################################################################################
+### Error Cases
+################################################################################
+
+### Unauthorized - Missing X-User-Id Header
+GET {{baseUrl}}/v1/pasien/0000001
+
+### Unauthorized - Invalid X-User-Id
+GET {{baseUrl}}/v1/pasien/0000001
+X-User-Id: invalid
+
+### Not Found
+GET {{baseUrl}}/v1/pasien/NOTEXIST
+X-User-Id: {{userId}}
+
+### Validation Error - Invalid JSON
+POST {{baseUrl}}/v1/pasien
+X-User-Id: {{userId}}
+Content-Type: application/json
+
+{invalid json}

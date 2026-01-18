@@ -1,0 +1,3 @@
+{
+  "laravel_query": "table('menu as m')->select('m.id','m.menu_name','m.app_name')->where('m.menu_name','like','admin')->orderby('m.id','desc')->take(10)"
+}

@@ -6,7 +6,7 @@
 ## Entry Point
 
 Handler: `PasienSelectHandlers.HandleSelect`  
-Location: [internal/httpapi/pasien_select.go](../../internal/httpapi/pasien_select.go#L20)
+Location: [internal/controllers/pasien/PasienSelectController.go](../../../internal/controllers/pasien/PasienSelectController.go#L1)
 
 ## Purpose
 
@@ -93,7 +93,7 @@ Note: using a transaction for read ensures consistent behavior with the repo’s
 
 ## Related Code References
 
-- Handler: [internal/httpapi/pasien_select.go](../../internal/httpapi/pasien_select.go)
+- Handler: [internal/controllers/pasien/PasienSelectController.go](../../../internal/controllers/pasien/PasienSelectController.go)
 - Request type: [internal/database/eloquent/select.go](../../internal/database/eloquent/select.go)
 - Select logic: [internal/database/eloquent/select.go](../../internal/database/eloquent/select.go)
 - Schema: [internal/database/model/pasienmodel/pasien_schema.go](../../internal/database/model/pasienmodel/pasien_schema.go)

@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"errors"
 	"database/sql"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -13,7 +13,7 @@ import (
 
 	"mylab-api-go/internal/config"
 	"mylab-api-go/internal/db"
-	"mylab-api-go/internal/httpapi"
+	"mylab-api-go/internal/routes"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 		log.Fatalf("config error: %v", err)
 	}
 
-	// Database is optional for now, but required for billing endpoints.
+	// Database optional untuk startup, tapi dibutuhkan untuk endpoint yang akses DB.
 	var dbConn *sql.DB
 	if cfg.DatabaseURL != "" {
 		opened, err := db.Open(cfg.DatabaseURL)
@@ -33,7 +33,7 @@ func main() {
 		defer func() { _ = dbConn.Close() }()
 	}
 
-	srv := httpapi.New(cfg.HTTPAddr, cfg.LogLevel, dbConn)
+	srv := routes.New(cfg.HTTPAddr, cfg.LogLevel, dbConn)
 
 	errCh := make(chan error, 1)
 	go func() {

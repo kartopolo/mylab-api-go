@@ -1,0 +1,24 @@
+{
+  "description": "Successful login without role (role is null in database)",
+  "request": {
+    "method": "POST",
+    "url": "/v1/auth/login",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "email": "user@example.com",
+      "password": "password123"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "message": "Login successful.",
+      "user_id": 2,
+      "company_id": 1
+    },
+    "note": "Role field is omitted when null in database"
+  }
+}

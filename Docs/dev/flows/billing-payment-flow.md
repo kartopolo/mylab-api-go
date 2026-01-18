@@ -7,14 +7,14 @@
 ## Entry Point
 
 **Handler**: `HandlePaymentOnly`  
-**Location**: [internal/httpapi/billing_payment.go](../../internal/httpapi/billing_payment.go#L22)  
+**Location**: (removed) Billing module has been deleted.
 **HTTP Method**: POST  
 **Route**: `/v1/billing/payment`
 
 ## Request Flow
 
 ### 1. Handler Receives Request
-**Location**: `internal/httpapi/billing_payment.go::HandlePaymentOnly`
+**Location**: (removed)
 
 ```
 POST /v1/billing/payment HTTP/1.1
@@ -36,7 +36,7 @@ Content-Type: application/json
 - Disallow unknown fields (security)
 
 ### 2. API-Layer Validation
-**Location**: `internal/httpapi/billing_payment.go::HandlePaymentOnly` (line ~35)
+**Location**: (removed)
 
 Validates:
 - JSON format (valid JSON, not malformed)
@@ -47,7 +47,7 @@ Validates:
 - Error: `"body": "invalid JSON"`
 
 ### 3. Create Service Instance
-**Location**: `internal/httpapi/billing_payment.go::HandlePaymentOnly` (line ~41)
+**Location**: (removed)
 
 ```go
 svc := billing.NewPaymentOnlyService()
@@ -58,7 +58,7 @@ Service contains:
 - Business logic methods
 
 ### 4. Execute in Transaction
-**Location**: `internal/httpapi/billing_payment.go::HandlePaymentOnly` (line ~43)
+**Location**: (removed)
 
 ```go
 res, err := db.WithTx(r.Context(), h.sqlDB, func(tx *sql.Tx) (billing.PaymentOnlyResult, error) {
@@ -267,7 +267,7 @@ ROLLBACK
 - Error propagated to handler
 
 ### 8. Error Handling in Handler
-**Location**: `internal/httpapi/billing_payment.go::HandlePaymentOnly` (line ~50-62)
+**Location**: (removed)
 
 **Error Categorization**:
 
@@ -296,13 +296,13 @@ writeError(w, http.StatusInternalServerError, "Internal server error.", nil)
 - `500`: Unexpected errors
 
 ### 9. Success Response
-**Location**: `internal/httpapi/billing_payment.go::HandlePaymentOnly` (line ~63)
+**Location**: (removed)
 
 ```go
 writeOK(w, billing.PaymentOnlyResult{NoLab: res.NoLab})
 ```
 
-**Response Structure** (`internal/httpapi/response.go`):
+**Response Structure**: use `internal/routes/shared/response.go`.
 
 ```json
 {
@@ -416,12 +416,11 @@ Response: HTTP 200 + JSON
 ```
 
 ## Related Code References
-
-- **Handler**: [internal/httpapi/billing_payment.go](../../internal/httpapi/billing_payment.go)
-- **Service**: [internal/billing/payment_only.go](../../internal/billing/payment_only.go)
+- **Handler**: (removed) Billing module has been deleted.
+- **Service**: (removed) Billing module has been deleted.
 - **Transaction Wrapper**: [internal/db/tx.go](../../internal/db/tx.go)
-- **Response Helpers**: [internal/httpapi/response.go](../../internal/httpapi/response.go)
-- **Error Types**: [internal/billing/errors.go](../../internal/billing/errors.go)
+- **Response Helpers**: [internal/routes/shared/response.go](../../internal/routes/shared/response.go)
+- **Error Types**: (removed) Billing module has been deleted.
 
 ## API Documentation
 
