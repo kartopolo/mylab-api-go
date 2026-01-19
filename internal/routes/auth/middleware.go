@@ -29,6 +29,10 @@ func WithAuth(next http.Handler) http.Handler {
 			return
 		}
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		if IsTokenRevoked(tokenString) {
+			shared.WriteError(w, http.StatusUnauthorized, "Unauthorized.", map[string]string{"token": "revoked"})
+			return
+		}
 
 		secret := strings.TrimSpace(os.Getenv("JWT_SECRET"))
 		if secret == "" {
@@ -48,8 +52,9 @@ func WithAuth(next http.Handler) http.Handler {
 			return
 		}
 		// Validate expiry
+		nowUnix := time.Now().Unix()
 		if exp, ok := claims["exp"].(float64); ok {
-			if int64(exp) < time.Now().Unix() {
+			if int64(exp) < nowUnix {
 				shared.WriteError(w, http.StatusUnauthorized, "Unauthorized.", map[string]string{"token": "expired"})
 				return
 			}
@@ -64,6 +69,43 @@ func WithAuth(next http.Handler) http.Handler {
 		}
 		if role, ok := claims["role"].(string); ok {
 			info.Role = role
+		}
+
+		// Session validation (Laravel-like): if token has jti and store is enabled,
+		// require active session.
+		if store, ok := GetSessionStore(); ok {
+			if jtiRaw, ok := claims["jti"].(string); ok {
+				jti := strings.TrimSpace(jtiRaw)
+				if jti != "" {
+					sess, found, err := store.Get(r.Context(), jti)
+					if err != nil {
+						shared.WriteError(w, http.StatusInternalServerError, "Internal server error.", map[string]string{"session": "store unavailable"})
+						return
+					}
+					if !found {
+						shared.WriteError(w, http.StatusUnauthorized, "Unauthorized.", map[string]string{"token": "session not found"})
+						return
+					}
+					if sess.RevokedAtUnix != nil {
+						shared.WriteError(w, http.StatusUnauthorized, "Unauthorized.", map[string]string{"token": "revoked"})
+						return
+					}
+					if sess.ExpiresAtUnix > 0 && sess.ExpiresAtUnix < nowUnix {
+						shared.WriteError(w, http.StatusUnauthorized, "Unauthorized.", map[string]string{"token": "expired"})
+						return
+					}
+					if sess.UserID > 0 && info.UserID > 0 && sess.UserID != info.UserID {
+						shared.WriteError(w, http.StatusUnauthorized, "Unauthorized.", map[string]string{"token": "invalid session"})
+						return
+					}
+					if sess.CompanyID > 0 && info.CompanyID > 0 && sess.CompanyID != info.CompanyID {
+						shared.WriteError(w, http.StatusUnauthorized, "Unauthorized.", map[string]string{"token": "invalid session"})
+						return
+					}
+					// Best-effort update last seen.
+					_ = store.Touch(r.Context(), jti, nowUnix)
+				}
+			}
 		}
 		r = r.WithContext(WithAuthInfoInContext(r.Context(), info))
 		next.ServeHTTP(w, r)

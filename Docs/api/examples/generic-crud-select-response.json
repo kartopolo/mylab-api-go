@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "message": "OK",
+  "data": [
+    {
+      "kd_ps": "PS0001",
+      "nama_ps": "Budi Santoso",
+      "no_hp": "08123456789"
+    }
+  ],
+  "paging": {
+    "page": 1,
+    "per_page": 25,
+    "has_more": false,
+    "total_rows": 1,
+    "total_pages": 1
+  }
+}

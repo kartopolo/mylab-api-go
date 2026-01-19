@@ -27,10 +27,29 @@ type GatewayHealth struct {
 	Plugins []PluginHealth `json:"plugins,omitempty"`
 }
 
+// AggregatePluginsHealthStrict returns HTTP 503 when any plugin is unhealthy.
+// This is useful for strict monitoring, but too noisy for liveness checks.
+func (c *PluginProxyController) AggregatePluginsHealthStrict(ctx context.Context) (GatewayHealth, int) {
+	return c.aggregatePluginsHealth(ctx, true)
+}
+
+// AggregatePluginsHealth returns HTTP 200 even if plugins are unhealthy.
+// This is intended for liveness checks ("API up").
+//
+// When strict=false, this endpoint keeps `ok=true` even if some plugins are
+// unhealthy, and surfaces plugin issues in the per-plugin list.
 func (c *PluginProxyController) AggregatePluginsHealth(ctx context.Context) (GatewayHealth, int) {
+	return c.aggregatePluginsHealth(ctx, false)
+}
+
+func (c *PluginProxyController) aggregatePluginsHealth(ctx context.Context, strict bool) (GatewayHealth, int) {
 	plugins, err := c.listPlugins(2 * time.Second)
 	if err != nil {
-		return GatewayHealth{OK: false, Message: "Plugin registry error."}, http.StatusServiceUnavailable
+		if strict {
+			return GatewayHealth{OK: false, Message: "Plugin registry error."}, http.StatusServiceUnavailable
+		}
+		// Non-strict: gateway is up; expose plugin registry errors via strict endpoint.
+		return GatewayHealth{OK: true, Message: "ok"}, http.StatusOK
 	}
 	if len(plugins) == 0 {
 		return GatewayHealth{OK: true, Message: "ok"}, http.StatusOK
@@ -100,9 +119,15 @@ func (c *PluginProxyController) AggregatePluginsHealth(ctx context.Context) (Gat
 	}
 
 	if anyFail {
-		report.OK = false
-		report.Message = "Some plugins are unhealthy."
-		return report, http.StatusServiceUnavailable
+		if strict {
+			report.OK = false
+			report.Message = "Some plugins are unhealthy."
+			return report, http.StatusServiceUnavailable
+		}
+		// Non-strict: keep gateway healthy, but include plugin statuses.
+		report.OK = true
+		report.Message = "ok"
+		return report, http.StatusOK
 	}
 	return report, http.StatusOK
 }

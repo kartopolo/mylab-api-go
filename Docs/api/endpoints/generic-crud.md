@@ -10,10 +10,11 @@ The server loads schema from:
 
 ## Security
 
-- Table access policy:
-  - `CRUD_ALLOWED_TABLES` (allowlist, takes precedence, supports `*`)
-  - `CRUD_DENIED_TABLES` (denylist, used only when allowlist is not set)
-- Tenant enforcement: table must have `company_id` column.
+- Table access policy (denylist-only):
+  - `CRUD_DENIED_TABLES`
+  - If empty, all tables are allowed.
+  - Use `*` to deny all tables.
+- Tenant enforcement: table must have `company_id` (preferred) or `com_id` (legacy) column.
 
 ## Endpoints
 
@@ -23,6 +24,8 @@ The server loads schema from:
 - `PATCH /v1/crud/{table}/{pk}` — Partial update (same as PUT, only provided fields)
 - `DELETE /v1/crud/{table}/{pk}` — Delete record
 - `POST /v1/crud/{table}/select` — List/select (safe filtering)
+
+See also: `Docs/api/endpoints/select.md`
 
 ## Authentication
 
@@ -56,13 +59,24 @@ Body: `eloquent.SelectRequest`
 }
 ```
 
+Notes:
+
+- If `per_page` is omitted or `<= 0`, the default is `100`.
+- Max `per_page` is `200`.
+
 Response (200):
 ```json
 {
   "ok": true,
   "message": "OK",
   "data": [{"kd_ps": "0001", "nama_ps": "John"}],
-  "paging": {"page": 1, "per_page": 20, "has_more": false}
+  "paging": {
+    "page": 1,
+    "per_page": 20,
+    "has_more": false,
+    "total_rows": 1,
+    "total_pages": 1
+  }
 }
 ```
 

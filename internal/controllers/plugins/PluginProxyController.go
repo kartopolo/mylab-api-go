@@ -175,6 +175,20 @@ func (c *PluginProxyController) listPlugins(ttl time.Duration) ([]PluginConfig, 
 }
 
 func loadPluginConfigs(dir string) ([]PluginConfig, error) {
+	// If plugin dir is missing, treat as "no plugins configured".
+	// This keeps /healthz usable in environments where PLUGIN_DIR isn't mounted.
+	if dir == "" {
+		return nil, nil
+	}
+	if st, err := os.Stat(dir); err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	} else if !st.IsDir() {
+		return nil, fmt.Errorf("PLUGIN_DIR is not a directory: %s", dir)
+	}
+
 	var files []string
 	walkErr := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {

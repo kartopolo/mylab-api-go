@@ -78,19 +78,19 @@ fetch('http://localhost:18080/v1/auth/login', {
 .then(r => r.json())
 .then(data => console.log(data));
 
-// Get pasien (with auth)
-fetch('http://localhost:18080/v1/pasien/0000001', {
-  headers: { 'X-User-Id': '1' }
+// Get pasien (Generic CRUD, with JWT)
+fetch('http://localhost:18080/v1/crud/pasien/0000001', {
+  headers: { 'Authorization': 'Bearer <JWT token>' }
 })
 .then(r => r.json())
 .then(data => console.log(data));
 
-// Create pasien (with auth)
-fetch('http://localhost:18080/v1/pasien', {
+// Create pasien (Generic CRUD, with JWT)
+fetch('http://localhost:18080/v1/crud/pasien', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'X-User-Id': '1'
+    'Authorization': 'Bearer <JWT token>'
   },
   body: JSON.stringify({
     nm_ps: 'Test User',
@@ -126,14 +126,14 @@ curl -X POST http://localhost:18080/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@example.com","password":"password123"}'
 
-# Get pasien
-curl http://localhost:18080/v1/pasien/0000001 \
-  -H "X-User-Id: 1"
+# Get pasien (Generic CRUD)
+curl http://localhost:18080/v1/crud/pasien/0000001 \
+  -H "Authorization: Bearer <JWT token>"
 
-# Create pasien
-curl -X POST http://localhost:18080/v1/pasien \
+# Create pasien (Generic CRUD)
+curl -X POST http://localhost:18080/v1/crud/pasien \
   -H "Content-Type: application/json" \
-  -H "X-User-Id: 1" \
+  -H "Authorization: Bearer <JWT token>" \
   -d '{"nm_ps":"Test","jk":"L","alamat":"Jakarta"}'
 ```
 
@@ -152,7 +152,7 @@ curl -s http://localhost:18080/v1/auth/login \
 2. Import OpenAPI spec: `Docs/openapi/openapi.yaml`
 3. Set environment variables:
    - `baseUrl`: `http://localhost:18080`
-   - `userId`: `1`
+  - `token`: `<JWT token>`
 
 ## 6. Automated Testing with Go
 
@@ -186,7 +186,7 @@ go test ./internal/routes/auth/...
 We provide ready-to-use `.http` files:
 
 - [`api-tests.http`](../api-tests.http) - All endpoints
-- Organized by category (auth, pasien, billing)
+- Organized by category (auth, query, generic CRUD)
 - Includes success and error cases
 
 ## Quick Test Workflow
@@ -210,8 +210,8 @@ make health
 ### Example Test Sequence
 1. Test health: `GET /healthz`
 2. Login: `POST /v1/auth/login`
-3. Get pasien: `GET /v1/pasien/0000001` (use userId from login)
-4. Create pasien: `POST /v1/pasien`
+3. Get pasien: `GET /v1/crud/pasien/0000001` (use token from login)
+4. Create pasien: `POST /v1/crud/pasien`
 
 ## Troubleshooting
 
@@ -239,7 +239,7 @@ make restart
 
 ### Unauthorized Errors
 ```bash
-# Ensure X-User-Id header is present
+# Ensure Authorization header is present
 # Check if user exists in database
 psql "postgres://tiara:tiara@localhost:15432/mylab" -c "SELECT id FROM users LIMIT 5"
 ```

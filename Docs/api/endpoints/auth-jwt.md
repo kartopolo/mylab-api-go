@@ -47,7 +47,7 @@ Authenticate user and return JWT token for API access.
 
 - Example:
 ```
-GET /v1/pasien
+GET /v1/crud/pasien/0000001
 Authorization: Bearer <JWT token>
 ```
 

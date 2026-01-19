@@ -22,14 +22,16 @@ type SelectRequest struct {
 }
 
 type PageResult struct {
-	Rows    []map[string]any
-	Page    int
-	PerPage int
-	HasMore bool
+	Rows       []map[string]any
+	Page       int
+	PerPage    int
+	HasMore    bool
+	TotalRows  int
+	TotalPages int
 }
 
 const (
-	DefaultPerPage = 25
+	DefaultPerPage = 100
 	MaxPerPage     = 200
 )
 
@@ -64,11 +66,18 @@ func SelectPage(ctx context.Context, q Querier, schema Schema, companyID int64, 
 	builder := newSQLBuilder()
 	whereParts := make([]string, 0, 8)
 
-	// Always apply tenant filter as company_id
-	if !schema.hasColumn("company_id") {
-		return nil, &ValidationError{Errors: map[string]string{"company_id": "schema does not support tenant filter (company_id missing)"}}
+	// Always apply tenant filter as company_id.
+	// Fallback: com_id (legacy).
+	tenantCol := ""
+	if schema.hasColumn("company_id") {
+		tenantCol = "company_id"
+	} else if schema.hasColumn("com_id") {
+		tenantCol = "com_id"
 	}
-	whereParts = append(whereParts, builder.eq("company_id", companyID))
+	if tenantCol == "" {
+		return nil, &ValidationError{Errors: map[string]string{"tenant": "schema does not support tenant filter (company_id/com_id missing)"}}
+	}
+	whereParts = append(whereParts, builder.eq(tenantCol, companyID))
 
 	// WHERE equals
 	if req.Where != nil {
@@ -77,9 +86,6 @@ func SelectPage(ctx context.Context, q Querier, schema Schema, companyID int64, 
 			col := resolveAlias(schema, k)
 			if !schema.hasColumn(col) {
 				return nil, &ValidationError{Errors: map[string]string{k: "unknown field"}}
-			}
-			if col == schema.PrimaryKey {
-				// allow
 			}
 			whereParts = append(whereParts, builder.eq(col, req.Where[k]))
 		}
@@ -96,6 +102,37 @@ func SelectPage(ctx context.Context, q Querier, schema Schema, companyID int64, 
 			pattern := req.Like[k]
 			whereParts = append(whereParts, builder.ilike(col, fmt.Sprintf("%%%v%%", pattern)))
 		}
+	}
+
+	// Count total rows for accurate paging metadata.
+	// Must be executed BEFORE adding limit/offset args.
+	countQuery := fmt.Sprintf(
+		"SELECT COUNT(*) FROM %s WHERE %s",
+		schema.Table,
+		strings.Join(whereParts, " AND "),
+	)
+	var totalRows64 int64
+	countRows, err := q.QueryContext(ctx, countQuery, builder.args...)
+	if err != nil {
+		return nil, err
+	}
+	if !countRows.Next() {
+		_ = countRows.Close()
+		if err := countRows.Err(); err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("count query returned no rows")
+	}
+	if err := countRows.Scan(&totalRows64); err != nil {
+		_ = countRows.Close()
+		return nil, err
+	}
+	// Important: close rows before issuing another query on the same tx/connection.
+	_ = countRows.Close()
+	totalRows := int(totalRows64)
+	totalPages := 0
+	if perPage > 0 {
+		totalPages = (totalRows + perPage - 1) / perPage
 	}
 
 	orderBySQL, verr := buildOrderBy(schema, req.OrderBy)
@@ -137,7 +174,7 @@ func SelectPage(ctx context.Context, q Querier, schema Schema, companyID int64, 
 		out = out[:perPage]
 	}
 
-	return &PageResult{Rows: out, Page: page, PerPage: perPage, HasMore: hasMore}, nil
+	return &PageResult{Rows: out, Page: page, PerPage: perPage, HasMore: hasMore, TotalRows: totalRows, TotalPages: totalPages}, nil
 }
 
 func normalizeSelect(schema Schema, selectCols []string) ([]string, *ValidationError) {
@@ -251,9 +288,4 @@ func (b *sqlBuilder) eq(col string, v any) string {
 func (b *sqlBuilder) ilike(col string, v any) string {
 	// Postgres-only operator; good enough for current docker env.
 	return fmt.Sprintf("%s ILIKE %s", col, b.push(v))
-}
-
-func (b *sqlBuilder) secIDLegacyTenant(col string) string {
-	// (col IS NULL OR col = '' OR col = '0')
-	return fmt.Sprintf("(%s IS NULL OR %s = %s OR %s = %s)", col, col, b.push(""), col, b.push("0"))
 }

@@ -93,15 +93,16 @@ LOG_LEVEL=info
 | `LOG_LEVEL` | No | `info` | Logging level (debug/info/warn/error) |
 | `ENVIRONMENT` | No | `development` | Environment name |
 | `CORS_ALLOWED_ORIGINS` | No | localhost | Comma-separated allowed origins |
-| `QUERYDSL_ALLOWED_TABLES` | No | - | Comma-separated allowlist for `POST /v1/query` tables (use `*` for all tables). If set, takes precedence over denylist. |
-| `QUERYDSL_DENIED_TABLES` | No | - | Comma-separated denylist for `POST /v1/query` tables. Used only when `QUERYDSL_ALLOWED_TABLES` is not set. |
-| `CRUD_ALLOWED_TABLES` | No | - | Comma-separated allowlist for `/v1/crud/{table}` (use `*` for all tables). If set, takes precedence over denylist. |
-| `CRUD_DENIED_TABLES` | No | - | Comma-separated denylist for `/v1/crud/{table}`. Used only when `CRUD_ALLOWED_TABLES` is not set. |
+| `QUERYDSL_DENIED_TABLES` | No | - | Comma-separated denylist for `POST /v1/query` tables. If empty, all tables are allowed. Use `*` to deny all tables. |
+| `CRUD_DENIED_TABLES` | No | - | Comma-separated denylist for `/v1/crud/{table}`. If empty, all tables are allowed. Use `*` to deny all tables. |
 | `SCHEMA_DIR` | No | - | Directory containing `{table}.txt` schema files (externalized model). Used by schema-driven CRUD/services; falls back to DB introspection when missing. |
 | `DB_SCHEMA` | No | `public` | Postgres schema name used for DB introspection (information_schema). |
 | `PLUGIN_DIR` | No | - | Directory containing `*.json` plugin proxy configs. Enables routing under `/v1/plugins/*` to upstream microservices. |
 | `RL_RATE_PER_MIN` | No | `60` | Rate limit: allowed requests per minute per IP for `/v1/crud/*`. |
 | `RL_BURST` | No | `20` | Rate limit burst capacity (maximum tokens) per IP. |
+| `AUTH_SESSION_DRIVER` | No | `file` | Auth session store driver for JWT sessions. Options: `file`, `postgres`/`database`, `none`. |
+| `AUTH_SESSION_FILES` | No | `storage/sessions` | Directory for file-based auth sessions (default Laravel-like path). |
+| `AUTH_SESSION_TABLE` | No | `auth_sessions` | Table name for Postgres-backed auth sessions. |
 
 ## Database Connection Formats
 
@@ -196,6 +197,27 @@ env_file:
 # 3. Run
 docker-compose up
 ```
+
+### Scenario 5: Docker + Persistent Auth Sessions (Volume)
+
+If you use `AUTH_SESSION_DRIVER=file` (default), mount a volume for `storage/sessions` so logout/session state survives container restarts.
+
+Example snippet:
+
+```yaml
+services:
+  mylab_api_go:
+    environment:
+      - AUTH_SESSION_DRIVER=file
+      - AUTH_SESSION_FILES=/app/storage/sessions
+    volumes:
+      - mylab_api_sessions:/app/storage/sessions
+
+volumes:
+  mylab_api_sessions:
+```
+
+If you use `AUTH_SESSION_DRIVER=postgres`, the server auto-creates the `AUTH_SESSION_TABLE` (default `auth_sessions`) in the configured database.
 
 ### Scenario 4: Mixed (Systemd + .env Fallback)
 

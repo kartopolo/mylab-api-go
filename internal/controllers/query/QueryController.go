@@ -30,17 +30,13 @@ type LaravelQueryRequest struct {
 func NewQueryController(sqlDB *sql.DB) *QueryController {
 	// Configure table access via env vars (loaded from .env or system env).
 	//
-	// Modes:
-	// 1) Allowlist (recommended): QUERYDSL_ALLOWED_TABLES=pasien,menu
-	//    - If set, only listed DB tables are enabled.
-	//    - Supports '*' meaning all DB tables.
-	//
-	// 2) Denylist: QUERYDSL_DENIED_TABLES=menu
-	//    - If allowlist is not set, all DB tables are enabled EXCEPT those denied.
-	allowedRaw := strings.TrimSpace(os.Getenv("QUERYDSL_ALLOWED_TABLES"))
+	// Denylist-only:
+	// - QUERYDSL_DENIED_TABLES=menu
+	// - If empty, all tables are allowed.
+	// - Supports '*' meaning deny all tables.
 	deniedRaw := strings.TrimSpace(os.Getenv("QUERYDSL_DENIED_TABLES"))
 
-	policy := querydsl.ParseTablePolicy(allowedRaw, deniedRaw)
+	policy := querydsl.ParseTablePolicy("", deniedRaw)
 	return &QueryController{sqlDB: sqlDB, policy: policy}
 }
 

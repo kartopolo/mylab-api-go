@@ -44,6 +44,16 @@ func New(addr string, logLevelRaw string, sqlDB *sql.DB) *Server {
 		shared.WriteJSON(w, status, report)
 	})
 
+	// Strict plugin health: returns 503 if any plugin is unhealthy.
+	mux.HandleFunc("/healthz/plugins", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		report, status := plgProxy.AggregatePluginsHealthStrict(r.Context())
+		shared.WriteJSON(w, status, report)
+	})
+
 	// Alias endpoint (typo-friendly)
 	mux.HandleFunc("/healthza", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -86,6 +96,7 @@ func New(addr string, logLevelRaw string, sqlDB *sql.DB) *Server {
 
 	// Routes v1
 	mux.HandleFunc("/v1/auth/login", authCtrl.HandleLogin)
+	mux.HandleFunc("/v1/auth/logout", authCtrl.HandleLogout)
 	mux.HandleFunc("/v1/query", queryCtrl.HandleQuery)
 	mux.Handle("/v1/crud/", shared.WithRateLimit(http.HandlerFunc(crudCtrl.Handle)))
 	mux.Handle("/v1/plugins/", plgProxy)

@@ -50,7 +50,12 @@ func WithRecovery(next http.Handler) http.Handler {
 		defer func() {
 			if rec := recover(); rec != nil {
 				log.Printf(`{"ts":%q,"level":"error","msg":"panic recovered"}`, time.Now().UTC().Format(time.RFC3339Nano))
-				WriteError(w, http.StatusInternalServerError, "Internal server error.", nil)
+				err := map[string]string{"code": "panic"}
+				rid := RequestIDFromContext(r.Context())
+				if rid != "" {
+					err["request_id"] = rid
+				}
+				WriteError(w, http.StatusInternalServerError, "Internal server error.", err)
 			}
 		}()
 		next.ServeHTTP(w, r)

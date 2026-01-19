@@ -2,12 +2,15 @@ package crudcontroller
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"mylab-api-go/internal/database/eloquent"
 	"mylab-api-go/internal/db"
@@ -32,49 +35,27 @@ var tableNameRE = regexp.MustCompile("^[a-z0-9_]+$")
 // - Table access is controlled by env policy: CRUD_ALLOWED_TABLES / CRUD_DENIED_TABLES.
 // - Tenant enforcement uses company_id and rejects tables without company_id.
 type TableCRUDController struct {
-	sqlDB *sql.DB
-	// allowlist precedence; supports "*".
-	allowed       map[string]bool
-	denied        map[string]bool
-	allowAll      bool
-	allowlistMode bool
+	sqlDB   *sql.DB
+	denyAll bool
+	denied  map[string]bool
 }
 
 func NewTableCRUDController(sqlDB *sql.DB) *TableCRUDController {
-	allowedRaw := strings.TrimSpace(os.Getenv("CRUD_ALLOWED_TABLES"))
 	deniedRaw := strings.TrimSpace(os.Getenv("CRUD_DENIED_TABLES"))
 
-	c := &TableCRUDController{sqlDB: sqlDB, allowed: map[string]bool{}, denied: map[string]bool{}}
-	if allowedRaw != "" {
-		c.allowlistMode = true
-		for _, part := range strings.Split(allowedRaw, ",") {
-			name := strings.ToLower(strings.TrimSpace(part))
-			if name == "" {
-				continue
-			}
-			if name == "*" {
-				c.allowAll = true
-				continue
-			}
-			c.allowed[name] = true
-		}
-		return c
-	}
+	c := &TableCRUDController{sqlDB: sqlDB, denied: map[string]bool{}}
 	if deniedRaw != "" {
 		for _, part := range strings.Split(deniedRaw, ",") {
 			name := strings.ToLower(strings.TrimSpace(part))
 			if name == "" {
 				continue
 			}
+			if name == "*" {
+				c.denyAll = true
+				continue
+			}
 			c.denied[name] = true
 		}
-	}
-
-	// Safety: if neither allowlist nor denylist configured, require explicit allowlist.
-	// This is a safe-fail default to avoid accidental exposure.
-	if allowedRaw == "" && deniedRaw == "" {
-		c.allowlistMode = true
-		// allowed remains empty -> no tables allowed until CRUD_ALLOWED_TABLES set.
 	}
 	return c
 }
@@ -84,11 +65,8 @@ func (c *TableCRUDController) Allows(table string) bool {
 	if t == "" {
 		return false
 	}
-	if c.allowlistMode {
-		if c.allowAll {
-			return true
-		}
-		return c.allowed[t]
+	if c.denyAll {
+		return false
 	}
 	return !c.denied[t]
 }
@@ -198,13 +176,14 @@ func (c *TableCRUDController) handleCreate(w http.ResponseWriter, r *http.Reques
 		if err != nil {
 			return nil, err
 		}
-		if !s.HasColumn("company_id") {
-			return nil, &eloquent.ValidationError{Errors: map[string]string{"company_id": "schema does not support tenant filter (company_id missing)"}}
+		tenantCol, verr := resolveTenantColumn(s)
+		if verr != nil {
+			return nil, verr
 		}
-		return eloquent.Insert(r.Context(), tx, s, withTenant(payload, companyID))
+		return eloquent.Insert(r.Context(), tx, s, withTenant(payload, tenantCol, companyID))
 	})
 	if err != nil {
-		writeDomainError(w, err)
+		writeDomainError(w, r, err)
 		return
 	}
 
@@ -217,13 +196,14 @@ func (c *TableCRUDController) handleGet(w http.ResponseWriter, r *http.Request, 
 		if err != nil {
 			return nil, err
 		}
-		if !s.HasColumn("company_id") {
-			return nil, &eloquent.ValidationError{Errors: map[string]string{"company_id": "schema does not support tenant filter (company_id missing)"}}
+		tenantCol, verr := resolveTenantColumn(s)
+		if verr != nil {
+			return nil, verr
 		}
-		return eloquent.FindByPKAndCompanyID(r.Context(), tx, s, pk, companyID)
+		return eloquent.FindByPKAndTenant(r.Context(), tx, s, pk, tenantCol, companyID)
 	})
 	if err != nil {
-		writeDomainError(w, err)
+		writeDomainError(w, r, err)
 		return
 	}
 	shared.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "message": "OK", "data": row})
@@ -243,13 +223,14 @@ func (c *TableCRUDController) handleUpdate(w http.ResponseWriter, r *http.Reques
 		if err != nil {
 			return nil, err
 		}
-		if !s.HasColumn("company_id") {
-			return nil, &eloquent.ValidationError{Errors: map[string]string{"company_id": "schema does not support tenant filter (company_id missing)"}}
+		tenantCol, verr := resolveTenantColumn(s)
+		if verr != nil {
+			return nil, verr
 		}
-		return nil, eloquent.UpdateByPKAndCompanyID(r.Context(), tx, s, pk, companyID, withTenant(payload, companyID))
+		return nil, eloquent.UpdateByPKAndTenant(r.Context(), tx, s, pk, tenantCol, companyID, withTenant(payload, tenantCol, companyID))
 	})
 	if err != nil {
-		writeDomainError(w, err)
+		writeDomainError(w, r, err)
 		return
 	}
 	shared.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "message": "Updated.", "table": table, "pk": pk})
@@ -261,13 +242,14 @@ func (c *TableCRUDController) handleDelete(w http.ResponseWriter, r *http.Reques
 		if err != nil {
 			return nil, err
 		}
-		if !s.HasColumn("company_id") {
-			return nil, &eloquent.ValidationError{Errors: map[string]string{"company_id": "schema does not support tenant filter (company_id missing)"}}
+		tenantCol, verr := resolveTenantColumn(s)
+		if verr != nil {
+			return nil, verr
 		}
-		return nil, eloquent.DeleteByPKAndCompanyID(r.Context(), tx, s, pk, companyID)
+		return nil, eloquent.DeleteByPKAndTenant(r.Context(), tx, s, pk, tenantCol, companyID)
 	})
 	if err != nil {
-		writeDomainError(w, err)
+		writeDomainError(w, r, err)
 		return
 	}
 	shared.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "message": "Deleted.", "table": table, "pk": pk})
@@ -283,18 +265,37 @@ func (c *TableCRUDController) handleSelect(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	res, err := db.WithTx(r.Context(), c.sqlDB, func(tx *sql.Tx) (*eloquent.PageResult, error) {
+	selectOnce := func() (*eloquent.PageResult, error) {
+		return db.WithTx(r.Context(), c.sqlDB, func(tx *sql.Tx) (*eloquent.PageResult, error) {
 		s, err := schema.LoadSchema(r.Context(), tx, table)
 		if err != nil {
 			return nil, err
 		}
-		if !s.HasColumn("company_id") {
-			return nil, &eloquent.ValidationError{Errors: map[string]string{"company_id": "schema does not support tenant filter (company_id missing)"}}
+		if _, verr := resolveTenantColumn(s); verr != nil {
+			return nil, verr
 		}
 		return eloquent.SelectPage(r.Context(), tx, s, companyID, req)
-	})
+		})
+	}
+
+	res, err := selectOnce()
 	if err != nil {
-		writeDomainError(w, err)
+		// Retry once when the underlying tx connection is bad (common after DB restart).
+		if errors.Is(err, driver.ErrBadConn) || strings.Contains(strings.ToLower(err.Error()), "driver: bad connection") {
+			res, err = selectOnce()
+		}
+	}
+	if err != nil {
+		// Log detail for debugging (still return safe envelope to client).
+		rid := shared.RequestIDFromContext(r.Context())
+		log.Printf(
+			`{"ts":%q,"level":"error","msg":"crud select failed","request_id":%q,"table":%q,"error":%q}`,
+			time.Now().UTC().Format(time.RFC3339Nano),
+			rid,
+			table,
+			err.Error(),
+		)
+		writeDomainError(w, r, err)
 		return
 	}
 
@@ -303,33 +304,81 @@ func (c *TableCRUDController) handleSelect(w http.ResponseWriter, r *http.Reques
 		"message": "OK",
 		"data":    res.Rows,
 		"paging": map[string]any{
-			"page":     res.Page,
-			"per_page": res.PerPage,
-			"has_more": res.HasMore,
+			"page":        res.Page,
+			"per_page":    res.PerPage,
+			"has_more":    res.HasMore,
+			"total_rows":  res.TotalRows,
+			"total_pages": res.TotalPages,
 		},
 	})
 }
 
-func withTenant(payload map[string]any, companyID int64) map[string]any {
+func withTenant(payload map[string]any, tenantCol string, companyID int64) map[string]any {
 	if payload == nil {
 		payload = map[string]any{}
 	}
-	payload["company_id"] = companyID
+	payload[tenantCol] = companyID
 	return payload
 }
 
-func writeDomainError(w http.ResponseWriter, err error) {
+func resolveTenantColumn(s eloquent.Schema) (string, error) {
+	if s.HasColumn("company_id") {
+		return "company_id", nil
+	}
+	if s.HasColumn("com_id") {
+		return "com_id", nil
+	}
+	return "", &eloquent.ValidationError{Errors: map[string]string{"tenant": "schema does not support tenant filter (company_id/com_id missing)"}}
+}
+
+func writeDomainError(w http.ResponseWriter, r *http.Request, err error) {
+	rid := ""
+	if r != nil {
+		rid = shared.RequestIDFromContext(r.Context())
+	}
+
 	var ve *eloquent.ValidationError
 	if errors.As(err, &ve) {
-		shared.WriteError(w, http.StatusUnprocessableEntity, "Validation failed.", ve.Errors)
+		out := ve.Errors
+		if out == nil {
+			out = map[string]string{}
+		}
+		out["code"] = "validation_error"
+		if rid != "" {
+			out["request_id"] = rid
+		}
+		shared.WriteError(w, http.StatusUnprocessableEntity, "Validation failed.", out)
 		return
 	}
 
 	var nf *eloquent.NotFoundError
 	if errors.As(err, &nf) {
-		shared.WriteError(w, http.StatusNotFound, "Not found.", map[string]string{"id": "not found"})
+		errs := map[string]string{"id": "not found", "code": "not_found"}
+		if rid != "" {
+			errs["request_id"] = rid
+		}
+		shared.WriteError(w, http.StatusNotFound, "Not found.", errs)
 		return
 	}
 
-	shared.WriteError(w, http.StatusInternalServerError, "Internal server error.", nil)
+	errCode := "internal_error"
+	// Heuristic categorization (safe for UI; detail stays in logs).
+	errLower := strings.ToLower(err.Error())
+	status := http.StatusInternalServerError
+	msg := "Internal server error."
+	if strings.Contains(errLower, "driver: bad connection") {
+		status = http.StatusServiceUnavailable
+		msg = "Service unavailable."
+		errCode = "db_bad_connection"
+	} else if strings.Contains(errLower, "sqlstate") || strings.Contains(errLower, "failed to connect") || strings.Contains(errLower, "connection") {
+		status = http.StatusServiceUnavailable
+		msg = "Service unavailable."
+		errCode = "database_error"
+	}
+
+	errs := map[string]string{"code": errCode}
+	if rid != "" {
+		errs["request_id"] = rid
+	}
+	shared.WriteError(w, status, msg, errs)
 }

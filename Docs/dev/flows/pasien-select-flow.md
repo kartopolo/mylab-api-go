@@ -74,9 +74,10 @@ This prevents cross-tenant data exposure.
 ## Paging Behavior
 
 - Default `page`: 1
-- Default `per_page`: 25
+- Default `per_page`: 100
 - Max `per_page`: 200
 - `has_more` is computed by fetching one extra row (`per_page + 1`) then trimming.
+- `total_rows` and `total_pages` are computed using `COUNT(*)` with the same filters.
 
 ## Error Handling
 

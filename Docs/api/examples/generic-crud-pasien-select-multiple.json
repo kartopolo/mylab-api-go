@@ -1,0 +1,18 @@
+{
+  "select": ["kd_ps", "nama_ps", "jk", "no_hp", "sec_id"],
+  "where": {
+    "jk": "L",
+    "sec_id": "10",
+    "status": 1
+  },
+  "like": {
+    "nama_ps": "budi",
+    "alamat": "jakarta"
+  },
+  "order_by": [
+    {"field": "nama_ps", "dir": "asc"},
+    {"field": "kd_ps", "dir": "desc"}
+  ],
+  "page": 1,
+  "per_page": 25
+}

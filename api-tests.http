@@ -3,7 +3,7 @@
 ### Or Thunder Client extension (rangav.vscode-thunder-client)
 
 @baseUrl = http://localhost:18080
-@userId = 1
+@token = <paste-jwt-token-here>
 
 ################################################################################
 ### Health & Observability
@@ -58,12 +58,12 @@ Content-Type: application/json
 }
 
 ################################################################################
-### Pasien (Patient) - CRUD
+### Pasien (Patient) - Generic CRUD
 ################################################################################
 
 ### Create Pasien
-POST {{baseUrl}}/v1/pasien
-X-User-Id: {{userId}}
+POST {{baseUrl}}/v1/crud/pasien
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -76,12 +76,12 @@ Content-Type: application/json
 }
 
 ### Get Pasien by ID
-GET {{baseUrl}}/v1/pasien/0000001
-X-User-Id: {{userId}}
+GET {{baseUrl}}/v1/crud/pasien/0000001
+Authorization: Bearer {{token}}
 
 ### Update Pasien
-PUT {{baseUrl}}/v1/pasien/0000001
-X-User-Id: {{userId}}
+PUT {{baseUrl}}/v1/crud/pasien/0000001
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -90,16 +90,16 @@ Content-Type: application/json
 }
 
 ### Delete Pasien
-DELETE {{baseUrl}}/v1/pasien/0000001
-X-User-Id: {{userId}}
+DELETE {{baseUrl}}/v1/crud/pasien/0000001
+Authorization: Bearer {{token}}
 
 ################################################################################
-### Pasien Select (Query)
+### Pasien Select (Generic CRUD)
 ################################################################################
 
 ### Select All Pasien (Page 1)
-POST {{baseUrl}}/v1/pasien/select
-X-User-Id: {{userId}}
+POST {{baseUrl}}/v1/crud/pasien/select
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -108,67 +108,47 @@ Content-Type: application/json
 }
 
 ### Select Pasien with Filter (Name contains "John")
-POST {{baseUrl}}/v1/pasien/select
-X-User-Id: {{userId}}
+POST {{baseUrl}}/v1/crud/pasien/select
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "where": [
-    ["nm_ps", "like", "%John%"]
-  ],
+  "like": {"nm_ps": "John"},
   "page": 1,
   "per_page": 10
 }
 
 ### Select Pasien with Multiple Filters
-POST {{baseUrl}}/v1/pasien/select
-X-User-Id: {{userId}}
+POST {{baseUrl}}/v1/crud/pasien/select
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "where": [
-    ["jk", "=", "L"],
-    ["alamat", "like", "%Jakarta%"]
-  ],
-  "order_by": [["nm_ps", "asc"]],
+  "where": {"jk": "L"},
+  "like": {"alamat": "Jakarta"},
+  "order_by": [{"field": "nm_ps", "dir": "asc"}],
   "page": 1,
   "per_page": 20
-}
-
-################################################################################
-### Billing
-################################################################################
-
-### Save Payment Only
-POST {{baseUrl}}/v1/billing/payment
-X-User-Id: {{userId}}
-Content-Type: application/json
-
-{
-  "no_lab": "LAB001",
-  "bayar": 500000,
-  "tgl_bayar": "2026-01-17T10:00:00Z",
-  "keterangan": "Pembayaran via transfer"
 }
 
 ################################################################################
 ### Error Cases
 ################################################################################
 
-### Unauthorized - Missing X-User-Id Header
-GET {{baseUrl}}/v1/pasien/0000001
+### Unauthorized - Missing Authorization Header
+GET {{baseUrl}}/v1/crud/pasien/0000001
 
-### Unauthorized - Invalid X-User-Id
-GET {{baseUrl}}/v1/pasien/0000001
-X-User-Id: invalid
+### Unauthorized - Invalid Authorization Header
+GET {{baseUrl}}/v1/crud/pasien/0000001
+Authorization: Bearer invalid
 
 ### Not Found
-GET {{baseUrl}}/v1/pasien/NOTEXIST
-X-User-Id: {{userId}}
+GET {{baseUrl}}/v1/crud/pasien/NOTEXIST
+Authorization: Bearer {{token}}
 
 ### Validation Error - Invalid JSON
-POST {{baseUrl}}/v1/pasien
-X-User-Id: {{userId}}
+POST {{baseUrl}}/v1/crud/pasien
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {invalid json}

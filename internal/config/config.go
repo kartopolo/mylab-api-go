@@ -15,6 +15,12 @@ type Config struct {
 	Environment string
 	JWTSecret   string
 	JWTExpiry   int64 // dalam detik
+
+	// Auth session storage (Laravel-like concept).
+	// Default: file-based sessions under storage/sessions.
+	AuthSessionDriver string
+	AuthSessionFiles  string
+	AuthSessionTable  string
 }
 
 // Load reads configuration from environment variables.
@@ -31,6 +37,10 @@ func Load() (Config, error) {
 		Environment: getenv("ENVIRONMENT", "development"),
 		JWTSecret:   getenv("JWT_SECRET", "my_secret_key"),
 		JWTExpiry:   getenvInt64("JWT_EXPIRY", 86400), // default 24 jam
+
+		AuthSessionDriver: getenv("AUTH_SESSION_DRIVER", "file"),
+		AuthSessionFiles:  getenv("AUTH_SESSION_FILES", "storage/sessions"),
+		AuthSessionTable:  getenv("AUTH_SESSION_TABLE", "auth_sessions"),
 	}
 
 	if cfg.HTTPAddr == "" {

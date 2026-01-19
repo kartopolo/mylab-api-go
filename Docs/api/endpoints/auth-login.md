@@ -38,6 +38,9 @@ This endpoint is **public** and does not require authentication headers.
 {
   "ok": true,
   "message": "Login successful.",
+  "token": "<JWT token>",
+  "expires_in": 86400,
+  "expires_at": 1768842974,
   "user_id": 123,
   "company_id": 45,
   "role": "admin"
@@ -105,6 +108,9 @@ Body:
 {
   "ok": true,
   "message": "Login successful.",
+  "token": "<JWT token>",
+  "expires_in": 86400,
+  "expires_at": 1768842974,
   "user_id": 1,
   "company_id": 1,
   "role": "admin"

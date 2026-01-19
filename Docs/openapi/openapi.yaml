@@ -86,6 +86,9 @@ paths:
                   - message
                   - user_id
                   - company_id
+                    - token
+                    - expires_in
+                    - expires_at
                 properties:
                   ok:
                     type: boolean
@@ -107,6 +110,19 @@ paths:
                     type: string
                     description: User role (optional, omitted if null in database)
                     example: admin
+                    token:
+                      type: string
+                      description: JWT token to be used as `Authorization: Bearer <token>`
+                      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    expires_in:
+                      type: integer
+                      description: Token lifetime in seconds
+                      example: 86400
+                    expires_at:
+                      type: integer
+                      format: int64
+                      description: Token expiry time as unix timestamp (seconds)
+                      example: 1768842974
               examples:
                 withRole:
                   summary: Login success with role
@@ -116,6 +132,9 @@ paths:
                     user_id: 1
                     company_id: 1
                     role: admin
+                      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      expires_in: 86400
+                      expires_at: 1768842974
                 withoutRole:
                   summary: Login success without role
                   value:
@@ -123,6 +142,9 @@ paths:
                     message: Login successful.
                     user_id: 2
                     company_id: 1
+                      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      expires_in: 86400
+                      expires_at: 1768842974
         '401':
           description: Invalid credentials
           content:
@@ -137,6 +159,61 @@ paths:
                     message: Unauthorized.
                     errors:
                       credentials: invalid
+
+    /v1/auth/logout:
+      post:
+        summary: User logout (revoke JWT)
+        description: |
+          Logout the current user by revoking the current JWT token (best-effort).
+          Client must still delete its local token/session.
+        tags:
+          - Authentication
+        parameters:
+          - in: header
+            name: Authorization
+            required: true
+            schema:
+              type: string
+            description: Bearer token, e.g. `Bearer <JWT>`
+        requestBody:
+          required: false
+          content:
+            application/json:
+              schema:
+                type: object
+        responses:
+          '200':
+            description: Logout successful
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required:
+                    - ok
+                    - message
+                  properties:
+                    ok:
+                      type: boolean
+                      example: true
+                    message:
+                      type: string
+                      example: Logout successful.
+          '401':
+            description: Unauthorized
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required:
+                    - ok
+                    - message
+                  properties:
+                    ok:
+                      type: boolean
+                      example: false
+                    message:
+                      type: string
+                      example: Unauthorized.
         '422':
           description: Validation error
           content:
@@ -170,7 +247,7 @@ paths:
     post:
       summary: Execute restricted query (Laravel-style DSL)
       description: |
-        Executes a tenant-enforced, whitelist-validated query built from a restricted
+        Executes a tenant-enforced, policy-validated query built from a restricted
         Laravel-style query builder chain.
 
         The server does NOT execute raw SQL strings.
@@ -198,7 +275,7 @@ paths:
       summary: Generic CRUD - create
       description: |
         Create a record in the given table. Tenant-enforced via company_id.
-        Table access is controlled via env (CRUD_ALLOWED_TABLES / CRUD_DENIED_TABLES).
+        Table access is controlled via env (CRUD_DENIED_TABLES, denylist-only).
       tags:
         - Generic CRUD
       parameters:
@@ -521,6 +598,9 @@ components:
           type: integer
         per_page:
           type: integer
+          description: Page size. Default 100 when omitted or <= 0. Max 200.
+          default: 100
+          maximum: 200
 
     GenericCRUDSelectPaging:
       type: object
@@ -531,6 +611,10 @@ components:
           type: integer
         has_more:
           type: boolean
+        total_rows:
+          type: integer
+        total_pages:
+          type: integer
 
     GenericCRUDSelectResponse:
       type: object

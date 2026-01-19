@@ -30,9 +30,10 @@ Required for all `/v1/*` endpoints.
 
 ### Restrictions
 
-- Table access is controlled by env policy:
-  - `QUERYDSL_ALLOWED_TABLES` (allowlist, recommended, takes precedence)
-  - `QUERYDSL_DENIED_TABLES` (denylist, used when allowlist is not set)
+- Table access is controlled by denylist-only env policy:
+  - `QUERYDSL_DENIED_TABLES`
+  - If empty, all tables are allowed.
+  - Use `*` to deny all tables.
 - Any referenced table (and joined table) must have a `company_id` column (tenant enforcement).
 - Unknown columns are rejected.
 - Tenant filter is always enforced via `company_id`.
