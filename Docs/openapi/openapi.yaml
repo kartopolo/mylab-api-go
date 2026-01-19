@@ -5,11 +5,19 @@ info:
   description: |
     Contract-first API definition. Keep this file in sync with handlers and JSON examples.
 servers:
+  - url: http://localhost:18080
+    description: Systemd/host run (default)
+  - url: http://localhost:58080
+    description: Docker Compose run (recommended for local dev)
   - url: http://localhost:8080
+    description: Direct container port (inside Docker network)
+security:
+  - BearerAuth: []
 paths:
   /healthz:
     get:
       summary: Health check
+      security: []
       responses:
         '200':
           description: OK
@@ -17,6 +25,7 @@ paths:
   /readyz:
     get:
       summary: Readiness check
+      security: []
       responses:
         "200":
           description: Ready
@@ -26,6 +35,7 @@ paths:
   /metrics:
     get:
       summary: Prometheus metrics
+      security: []
       responses:
         "200":
           description: Metrics
@@ -39,6 +49,7 @@ paths:
         No authentication header required for this endpoint.
       tags:
         - Authentication
+      security: []
       requestBody:
         required: true
         content:
@@ -86,9 +97,9 @@ paths:
                   - message
                   - user_id
                   - company_id
-                    - token
-                    - expires_in
-                    - expires_at
+                  - token
+                  - expires_in
+                  - expires_at
                 properties:
                   ok:
                     type: boolean
@@ -110,19 +121,19 @@ paths:
                     type: string
                     description: User role (optional, omitted if null in database)
                     example: admin
-                    token:
-                      type: string
-                      description: JWT token to be used as `Authorization: Bearer <token>`
-                      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-                    expires_in:
-                      type: integer
-                      description: Token lifetime in seconds
-                      example: 86400
-                    expires_at:
-                      type: integer
-                      format: int64
-                      description: Token expiry time as unix timestamp (seconds)
-                      example: 1768842974
+                  token:
+                    type: string
+                    description: "JWT token to be used as `Authorization: Bearer <token>`"
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  expires_in:
+                    type: integer
+                    description: Token lifetime in seconds
+                    example: 86400
+                  expires_at:
+                    type: integer
+                    format: int64
+                    description: Token expiry time as unix timestamp (seconds)
+                    example: 1768842974
               examples:
                 withRole:
                   summary: Login success with role
@@ -132,9 +143,9 @@ paths:
                     user_id: 1
                     company_id: 1
                     role: admin
-                      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-                      expires_in: 86400
-                      expires_at: 1768842974
+                    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    expires_in: 86400
+                    expires_at: 1768842974
                 withoutRole:
                   summary: Login success without role
                   value:
@@ -142,9 +153,9 @@ paths:
                     message: Login successful.
                     user_id: 2
                     company_id: 1
-                      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-                      expires_in: 86400
-                      expires_at: 1768842974
+                    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    expires_in: 86400
+                    expires_at: 1768842974
         '401':
           description: Invalid credentials
           content:
@@ -214,7 +225,7 @@ paths:
                     message:
                       type: string
                       example: Unauthorized.
-        '422':
+          '422':
           description: Validation error
           content:
             application/json:
@@ -236,7 +247,7 @@ paths:
                     message: Validation failed.
                     errors:
                       body: invalid JSON
-        '500':
+          '500':
           description: Internal server error
           content:
             application/json:
@@ -253,8 +264,6 @@ paths:
         The server does NOT execute raw SQL strings.
       tags:
         - Query
-      security:
-        - UserIdHeader: []
       requestBody:
         required: true
         content:
@@ -444,14 +453,23 @@ paths:
           description: Server error
 components:
   securitySchemes:
-    UserIdHeader:
-      type: apiKey
-      in: header
-      name: X-User-Id
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
       description: |
-        Required for all /v1 endpoints.
-        The API looks up the user in `users` and derives tenant context from `users.company_id`.
+        Use the Authorization header: `Authorization: Bearer <token>`.
   schemas:
+    ServiceError:
+      type: object
+      required:
+        - ok
+        - message
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
     ServiceOkResponse:
       type: object
       properties:
@@ -587,8 +605,24 @@ components:
         where:
           type: object
           additionalProperties: true
+        or_where:
+          type: object
+          description: |
+            OR-grouped equality filters. Each key becomes `column = value`.
+            The OR group is AND-ed with other filters.
+          additionalProperties: true
         like:
           type: object
+          description: |
+            Case-insensitive LIKE filters (Postgres ILIKE).
+            If the value contains `%` or `_`, it is used as a raw pattern.
+            Otherwise the server defaults to wrapping it as `%value%`.
+          additionalProperties: true
+        or_like:
+          type: object
+          description: |
+            OR-grouped LIKE filters. Same pattern rules as `like`.
+            Use this for multi-column search.
           additionalProperties: true
         order_by:
           type: array

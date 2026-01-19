@@ -15,7 +15,9 @@ type OrderBy struct {
 type SelectRequest struct {
 	Select  []string       `json:"select"`
 	Where   map[string]any `json:"where"`
+	OrWhere map[string]any `json:"or_where"`
 	Like    map[string]any `json:"like"`
+	OrLike  map[string]any `json:"or_like"`
 	OrderBy []OrderBy      `json:"order_by"`
 	Page    int            `json:"page"`
 	PerPage int            `json:"per_page"`
@@ -91,6 +93,22 @@ func SelectPage(ctx context.Context, q Querier, schema Schema, companyID int64, 
 		}
 	}
 
+	// OR-WHERE equals (grouped)
+	if req.OrWhere != nil {
+		keys := sortedKeys(req.OrWhere)
+		orParts := make([]string, 0, len(keys))
+		for _, k := range keys {
+			col := resolveAlias(schema, k)
+			if !schema.hasColumn(col) {
+				return nil, &ValidationError{Errors: map[string]string{k: "unknown field"}}
+			}
+			orParts = append(orParts, builder.eq(col, req.OrWhere[k]))
+		}
+		if len(orParts) > 0 {
+			whereParts = append(whereParts, "("+strings.Join(orParts, " OR ")+")")
+		}
+	}
+
 	// LIKE (case-insensitive on Postgres via ILIKE)
 	if req.Like != nil {
 		keys := sortedKeys(req.Like)
@@ -99,8 +117,25 @@ func SelectPage(ctx context.Context, q Querier, schema Schema, companyID int64, 
 			if !schema.hasColumn(col) {
 				return nil, &ValidationError{Errors: map[string]string{k: "unknown field"}}
 			}
-			pattern := req.Like[k]
-			whereParts = append(whereParts, builder.ilike(col, fmt.Sprintf("%%%v%%", pattern)))
+			pattern := normalizeLikePattern(req.Like[k])
+			whereParts = append(whereParts, builder.ilike(col, pattern))
+		}
+	}
+
+	// OR-LIKE (grouped)
+	if req.OrLike != nil {
+		keys := sortedKeys(req.OrLike)
+		orParts := make([]string, 0, len(keys))
+		for _, k := range keys {
+			col := resolveAlias(schema, k)
+			if !schema.hasColumn(col) {
+				return nil, &ValidationError{Errors: map[string]string{k: "unknown field"}}
+			}
+			pattern := normalizeLikePattern(req.OrLike[k])
+			orParts = append(orParts, builder.ilike(col, pattern))
+		}
+		if len(orParts) > 0 {
+			whereParts = append(whereParts, "("+strings.Join(orParts, " OR ")+")")
 		}
 	}
 
@@ -175,6 +210,19 @@ func SelectPage(ctx context.Context, q Querier, schema Schema, companyID int64, 
 	}
 
 	return &PageResult{Rows: out, Page: page, PerPage: perPage, HasMore: hasMore, TotalRows: totalRows, TotalPages: totalPages}, nil
+}
+
+func normalizeLikePattern(v any) string {
+	// If client already provides SQL LIKE wildcards, respect them.
+	// Otherwise default to a "contains" search by wrapping with %...%.
+	s := strings.TrimSpace(fmt.Sprintf("%v", v))
+	if s == "" {
+		return "%%"
+	}
+	if strings.ContainsAny(s, "%_") {
+		return s
+	}
+	return "%" + s + "%"
 }
 
 func normalizeSelect(schema Schema, selectCols []string) ([]string, *ValidationError) {

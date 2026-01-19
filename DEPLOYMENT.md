@@ -91,7 +91,12 @@ Content-Type: application/json
 }
 
 # All other /v1/* endpoints require authentication
-# Header: X-User-Id: <user_id>
+# Header: Authorization: Bearer <JWT token>
+
+## Docker Compose Ports
+
+Jika menjalankan via docker compose di `/home/mylabapp/dockerdata`, port host default:
+- API: `http://localhost:58080` (host) -> `:8080` (container)
 ```
 
 ### Akses dari External Client

@@ -1,0 +1,12 @@
+{
+  "select": ["kd_ps", "nama_ps", "alamat", "telepon", "jk", "tgl_lahir"],
+  "page": 1,
+  "per_page": 25,
+  "or_like": {
+    "nama_ps": "budi",
+    "alamat": "jakarta",
+    "telepon": "0899%",
+    "sec_id": "10",
+    "nik": "317%"
+  }
+}

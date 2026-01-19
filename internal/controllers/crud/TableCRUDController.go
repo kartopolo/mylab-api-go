@@ -32,7 +32,7 @@ var tableNameRE = regexp.MustCompile("^[a-z0-9_]+$")
 // - POST   /v1/crud/{table}/select  (eloquent.SelectRequest)
 //
 // Security:
-// - Table access is controlled by env policy: CRUD_ALLOWED_TABLES / CRUD_DENIED_TABLES.
+// - Table access is controlled by env policy (denylist-only): CRUD_DENIED_TABLES.
 // - Tenant enforcement uses company_id and rejects tables without company_id.
 type TableCRUDController struct {
 	sqlDB   *sql.DB

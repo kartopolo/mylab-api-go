@@ -41,3 +41,7 @@ temp/
 # Logs / tmp
 *.log
 /tmp/
+
+# Runtime auth session files (never commit)
+storage/sessions/*
+!storage/sessions/.gitkeep

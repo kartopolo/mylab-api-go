@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -30,12 +31,22 @@ func Load() (Config, error) {
 	// Try to load .env file (optional - don't fail if not exists)
 	loadEnvFile()
 
+	// Env vars (ringkas):
+	// - HTTP_ADDR (optional, default :8080)
+	// - DATABASE_URL (optional untuk startup; wajib untuk endpoint yang akses DB)
+	// - LOG_LEVEL (optional)
+	// - ENVIRONMENT (optional)
+	// - JWT_SECRET (wajib untuk auth; jangan pakai default di production)
+	// - JWT_EXPIRY (optional, detik)
+	// - AUTH_SESSION_DRIVER (optional: file|database|none)
+	// - AUTH_SESSION_FILES (optional, saat driver=file)
+	// - AUTH_SESSION_TABLE (optional, saat driver=database)
 	cfg := Config{
 		HTTPAddr:    getenv("HTTP_ADDR", ":8080"),
 		DatabaseURL: os.Getenv("DATABASE_URL"),
 		LogLevel:    getenv("LOG_LEVEL", "info"),
 		Environment: getenv("ENVIRONMENT", "development"),
-		JWTSecret:   getenv("JWT_SECRET", "my_secret_key"),
+		JWTSecret:   strings.TrimSpace(os.Getenv("JWT_SECRET")),
 		JWTExpiry:   getenvInt64("JWT_EXPIRY", 86400), // default 24 jam
 
 		AuthSessionDriver: getenv("AUTH_SESSION_DRIVER", "file"),
@@ -45,6 +56,9 @@ func Load() (Config, error) {
 
 	if cfg.HTTPAddr == "" {
 		return Config{}, fmt.Errorf("HTTP_ADDR is required")
+	}
+	if cfg.JWTSecret == "" {
+		return Config{}, fmt.Errorf("JWT_SECRET is required")
 	}
 	return cfg, nil
 }

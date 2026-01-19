@@ -36,7 +36,8 @@ func WithAuth(next http.Handler) http.Handler {
 
 		secret := strings.TrimSpace(os.Getenv("JWT_SECRET"))
 		if secret == "" {
-			secret = "my_secret_key"
+			shared.WriteError(w, http.StatusInternalServerError, "Internal server error.", map[string]string{"config": "JWT_SECRET is not set"})
+			return
 		}
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {

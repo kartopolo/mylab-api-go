@@ -23,7 +23,10 @@ Authenticate user and return JWT token for API access.
   "message": "Login successful.",
   "token": "<JWT token>",
   "expires_in": 86400,
-  "expires_at": 1700000000
+  "expires_at": 1700000000,
+  "user_id": 1,
+  "company_id": 1,
+  "role": "admin"
 }
 ```
 
@@ -65,7 +68,7 @@ Authorization: Bearer <JWT token>
 ---
 
 # Security Notes
-- Token is signed with server secret key (should be set via ENV)
+- Token is signed with server secret key (must be set via `JWT_SECRET`)
 - Token expiry default: 24 hours
 - Always use HTTPS in production
 

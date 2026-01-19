@@ -1,88 +1,66 @@
 # mylab-api-go
 
+# mylab-api-go
+
 Go-based REST API layer for MyLab.
 
-- Contract-first: see `Docs/openapi/openapi.yaml`
-- Standard response envelope: `ok/message/errors`
-- Transactional workflows with DB rollback on error
+- Contract-first: `Docs/openapi/openapi.yaml`
+- Standard envelope: `ok/message/errors`
+- Tenant enforced (JWT claim: `company_id`)
 
-## Quick Start
+## Quick start
 
-### Configuration
+### 1) Configure env
 ```bash
-# Copy environment template
 cp .env.example .env
-
-# Edit configuration (database, port, etc)
 nano .env
 ```
 
-### Service Status
-```bash
-# Cek status service
-systemctl status mylab-api-go
+Minimal required vars:
+- `DATABASE_URL` (required for endpoints that hit DB)
+- `JWT_SECRET` (required for auth)
 
-# Test API
+### 2) Run
+
+Option A (Docker compose - recommended for local dev):
+```bash
+cd /home/mylabapp/dockerdata
+docker-compose up --build mylab_api_go postgres
+
+curl http://localhost:58080/healthz
+```
+
+Option B (systemd / host run):
+```bash
+systemctl status mylab-api-go
 curl http://localhost:18080/healthz
 ```
 
-### Deploy Changes (After Code Update)
+### 3) Auth (JWT)
+
+Login:
 ```bash
-# Quick deploy (build + restart)
-./scripts/deploy.sh
-
-# Or manual:
-go build -o bin/mylab-api-go ./cmd/mylab-api-go
-sudo systemctl restart mylab-api-go
+curl -X POST http://localhost:18080/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"password123"}'
 ```
 
-### Development with Auto-Reload
-```bash
-# Watch for changes and auto-rebuild
-./scripts/dev-watch.sh
-```
+All other `/v1/*` endpoints:
+- `Authorization: Bearer <token>`
 
-### Access Info
-- **Local**: `http://localhost:18080`
-- **Port**: `18080`
-- **Health Check**: `GET /healthz`
-- **API Endpoints**: `/v1/*` (requires `X-User-Id` header, except `/v1/auth/login`)
+## Testing
 
-## Testing & Debugging
-
-### VS Code REST Client (Recommended)
-1. Install extension: **REST Client** (`humao.rest-client`)
-2. Open file: [`api-tests.http`](api-tests.http)
-3. Click "Send Request" above any test
-4. View response in split panel
-
-### Browser Console (for quick tests)
-```javascript
-// Login
-fetch('http://localhost:18080/v1/auth/login', {
-  method: 'POST',
-  headers: {'Content-Type': 'application/json'},
-  body: JSON.stringify({email: 'admin@example.com', password: 'password123'})
-}).then(r => r.json()).then(console.log)
-```
-
-📖 **Full Testing Guide**: See [Docs/TESTING.md](Docs/TESTING.md)
+- VS Code REST Client: [api-tests.http](api-tests.http)
+- Guide: [Docs/TESTING.md](Docs/TESTING.md)
 
 ## Configuration
 
-**Environment Variables**: Loaded from `.env` file or system environment.
-
-```bash
-# Database connection
-DATABASE_URL=postgres://tiara:tiara@localhost:15432/mylab?sslmode=disable
-
-# HTTP server
-HTTP_ADDR=:18080
-
-# Logging
-LOG_LEVEL=info
-```
-
-📖 **Full Configuration Guide**: See [Docs/CONFIGURATION.md](Docs/CONFIGURATION.md)
+- Env reference: [Docs/CONFIGURATION.md](Docs/CONFIGURATION.md)
+- Template: [.env.example](.env.example)
 
 ## Documentation
+
+- OpenAPI: [Docs/openapi/openapi.yaml](Docs/openapi/openapi.yaml)
+- Endpoint docs: [Docs/api/endpoints/](Docs/api/endpoints/)
+- Examples: [Docs/api/examples/](Docs/api/examples/)
+}).then(r => r.json()).then(console.log)

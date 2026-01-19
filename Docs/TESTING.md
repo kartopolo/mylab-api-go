@@ -2,6 +2,10 @@
 
 This document covers various ways to test and debug the MyLab API.
 
+**Base URL note**:
+- Systemd/host run: `http://localhost:18080`
+- Docker Compose run: `http://localhost:58080`
+
 ## 1. VS Code REST Client (Recommended)
 
 ### Installation
@@ -15,7 +19,7 @@ This document covers various ways to test and debug the MyLab API.
 
 **Features:**
 - ✅ Syntax highlighting
-- ✅ Variables support (`@baseUrl`, `@userId`)
+- ✅ Variables support (`@baseUrl`, `@token`)
 - ✅ Environment switching
 - ✅ Request history
 - ✅ Response viewer with formatting

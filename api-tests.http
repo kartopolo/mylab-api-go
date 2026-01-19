@@ -2,7 +2,14 @@
 ### Use REST Client extension in VS Code (humao.rest-client)
 ### Or Thunder Client extension (rangav.vscode-thunder-client)
 
+### Base URL:
+### - Systemd/host: http://localhost:18080
+### - Docker Compose: http://localhost:58080
 @baseUrl = http://localhost:18080
+
+### Token handling:
+### - Jika pakai REST Client, jalankan request "Login - Success (set token)" untuk mengisi @token otomatis.
+### - Jika pakai tool lain, paste token manual di sini.
 @token = <paste-jwt-token-here>
 
 ################################################################################
@@ -22,7 +29,8 @@ GET {{baseUrl}}/metrics
 ### Authentication
 ################################################################################
 
-### Login - Success
+### Login - Success (set token)
+# @name login
 POST {{baseUrl}}/v1/auth/login
 Content-Type: application/json
 
@@ -30,6 +38,8 @@ Content-Type: application/json
   "email": "admin@example.com",
   "password": "password123"
 }
+
+@token = {{login.response.body.$.token}}
 
 ### Login - Invalid Credentials
 POST {{baseUrl}}/v1/auth/login

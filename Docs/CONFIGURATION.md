@@ -92,6 +92,8 @@ LOG_LEVEL=info
 | `DATABASE_URL` | No | - | Database connection string |
 | `LOG_LEVEL` | No | `info` | Logging level (debug/info/warn/error) |
 | `ENVIRONMENT` | No | `development` | Environment name |
+| `JWT_SECRET` | Yes | - | JWT signing/verification secret (required for auth). |
+| `JWT_EXPIRY` | No | `86400` | JWT expiry in seconds (default 24h). |
 | `CORS_ALLOWED_ORIGINS` | No | localhost | Comma-separated allowed origins |
 | `QUERYDSL_DENIED_TABLES` | No | - | Comma-separated denylist for `POST /v1/query` tables. If empty, all tables are allowed. Use `*` to deny all tables. |
 | `CRUD_DENIED_TABLES` | No | - | Comma-separated denylist for `/v1/crud/{table}`. If empty, all tables are allowed. Use `*` to deny all tables. |

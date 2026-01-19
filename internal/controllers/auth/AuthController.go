@@ -207,7 +207,8 @@ func (c *AuthController) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 	secret := strings.TrimSpace(cfg.JWTSecret)
 	if secret == "" {
-		secret = "my_secret_key"
+		shared.WriteError(w, http.StatusInternalServerError, "Internal server error.", map[string]string{"config": "JWT_SECRET is not set"})
+		return
 	}
 
 	parsed, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
